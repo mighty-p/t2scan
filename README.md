@@ -21,8 +21,8 @@ w_scan vs scan:
 - it detects automatically which DVB/ATSC card to use
 - much more output formats, interfacing to other dtv software.
 
-1. Building t2scan
-------------------
+1 Building t2scan
+-----------------
 
 1.1 Obtaining t2scan
 --------------------
@@ -62,8 +62,8 @@ NOTE: cmake allows as ./configure does, a user defined install prefix.
       Use 'cmake -DCMAKE_INSTALL_PREFIX=<YOUR_INSTALL_PREFIX> ..'. If you don't
       overwrite CMAKE_INSTALL_PREFIX, w_scan will be installed with prefix=/usr.
 
-2. Basic usage
---------------
+2 Basic usage
+-------------
 
 The simplest use case is to just call the program without parameters:
 
@@ -85,17 +85,17 @@ Use the "-c" parameter to switch to a different channel list, e.g. the one for G
 
 For more sophisticated scan options see ./t2scan -h.
 
-3. Copyright
-------------
+3 Copyright
+-----------
 t2scan is GPLv2 Software, see included file LICENSE for details.
 
-4. Contacting the author
-------------------------
+4 Contacting the author
+-----------------------
 The author can be reached in the vdr-portal (user "mighty_p"). Also you can report issues
 on the Github project page: https://github.com/mighty-p/t2scan
 
-5. Credits
-----------
+5 Credits
+---------
 - "wirbel" Winfried Koehler for the original w_scan
 - "e9hack" Hartmut Birr for onid-patch (2006-09-01)
 - "seaman" giving his his Airstar2 for testing purposes to wirbel
