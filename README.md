@@ -11,9 +11,11 @@ linuxtv-dvb-apps-1.1.0. Please see the "Credits" section at the end of this file
 The differences are:
 
 t2scan vs w_scan:
-- only DVB-T/T2 (ATSC available, but untested)
-- simplified scanning (one-pass, NIT is only used to get the parameters of the *current* channel)
-- removed several options, trying to keep this tool very simple
+- Simplified scanning: The scan happens in one run and the NIT is only used to get the parameters of the *current* channel. This design decision was made since I noticed that often the NIT data referring to other channels is not reliable for DVB-T/T2, leading to channels not being found or having wrong IDs resulting in a non-working EPG in vdr. The approach should work with most current DVB-T/T2 cards since they can autodetect most parameters of a transponder when tuning. For DVB-S, this approach would result in many channels not being found, therefore I removed DVB-S (and -C) support.
+- Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-s".
+- Added a parameter to determine the lowest channel to scan ("-k") and the highest channel to scan ("-K"). This makes the scan much faster if the user knows which channels are used in the user's region.
+- Only DVB-T/T2 (ATSC available, but untested), support for DVB-C and DVB-S/S2 has been removed.
+- Removed several options, trying to keep this tool very simple.
 
 w_scan vs scan:
 - no initial tuning data needed, because scanning without this data is exactly
@@ -76,6 +78,18 @@ Obviously you can store the result in a file:
 I don't recommend appending the new channels directly to your channels.conf. t2scan
 may find duplicate channels or channels you are not interested in. Therefore my
 recommendation is to copy & paste only those channels that you need.
+
+To scan only for DVB-T2 channels:
+
+./t2scan -t2
+
+To scan only for DVB-T (but not DVB-T2) channels:
+
+./t2scan -t1
+
+To scan only channels 21 to 49:
+
+./t2scan -k21 -K49
 
 Per default, t2scan takes a channel list for Germany to scan. This should, however, also be
 OK in some other countries in Europe. For me, it also worked in Luxembourg and France.

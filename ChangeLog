@@ -1,0 +1,5 @@
+ChangeLog:
+--------------------
+2017-04-08
+ - initial version created by using wirbel's w_scan, simplifying it, and removing sat support
+
