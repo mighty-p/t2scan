@@ -31,17 +31,18 @@ w_scan vs scan:
 You can always obtain the latest version from the Github project page
 https://github.com/mighty-p/t2scan
 
-Either download one of the releases (https://github.com/mighty-p/t2scan/releases)
-- or clone the latest state: git clone https://github.com/mighty-p/t2scan
+Either download one of the releases (https://github.com/mighty-p/t2scan/releases) or clone the latest state: `git clone https://github.com/mighty-p/t2scan`
 
 
 1.2 Using the autotools tool chain
 ----------------------------------
 Make sure you are in the t2scan directory and issue the usual
 
+```
 ./configure
 make
 make install
+```
 
 NOTE: For compiling need up-to-date dvb headers with DVB API 5.3 support
 are needed. If configure fails complaining about missing or old DVB headers,
@@ -60,44 +61,28 @@ cmake ..
 make
 make install
 
-NOTE: cmake allows as ./configure does, a user defined install prefix.
-      Use 'cmake -DCMAKE_INSTALL_PREFIX=<YOUR_INSTALL_PREFIX> ..'. If you don't
-      overwrite CMAKE_INSTALL_PREFIX, w_scan will be installed with prefix=/usr.
+NOTE: `cmake` allows as `./configure` does, a user defined install prefix. Use `cmake -DCMAKE_INSTALL_PREFIX=<YOUR_INSTALL_PREFIX> ..`. If you don't overwrite CMAKE_INSTALL_PREFIX, w_scan will be installed with prefix=/usr.
 
 2 Basic usage
 -------------
 
-The simplest use case is to just call the program without parameters:
+The simplest use case is to just call the program without parameters: `./t2scan`
 
-./t2scan
-
-Obviously you can store the result in a file:
-
-./t2scan > channels_new.conf
+Obviously you can store the result in a file: `./t2scan > channels_new.conf`
 
 I don't recommend appending the new channels directly to your channels.conf. t2scan
 may find duplicate channels or channels you are not interested in. Therefore my
 recommendation is to copy & paste only those channels that you need.
 
-To scan only for DVB-T2 channels:
+To scan only for DVB-T2 channels: `t2scan -t2`
 
-./t2scan -t2
+To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
 
-To scan only for DVB-T (but not DVB-T2) channels:
+To scan only channels 21 to 49: `t2scan -k21 -K49`
 
-./t2scan -t1
+Per default, t2scan takes a channel list for Germany to scan. This should, however, also be OK in some other countries in Europe. For me, it also worked in Luxembourg and France. Use the `-c` parameter to switch to a different channel list, e.g. the one for Great Britain: `t2scan -c GB`
 
-To scan only channels 21 to 49:
-
-./t2scan -k21 -K49
-
-Per default, t2scan takes a channel list for Germany to scan. This should, however, also be
-OK in some other countries in Europe. For me, it also worked in Luxembourg and France.
-Use the "-c" parameter to switch to a different channel list, e.g. the one for Great Britain:
-
-./t2scan -c GB
-
-For more sophisticated scan options see ./t2scan -h.
+For more sophisticated scan options see `t2scan -h`.
 
 3 Copyright
 -----------
@@ -105,7 +90,7 @@ t2scan is GPLv2 Software, see included file LICENSE for details.
 
 4 Contacting the author
 -----------------------
-The author can be reached in the vdr-portal (user "mighty_p"). Also you can report issues
+The author can be reached in the vdr-portal (user "mighty-p"). Also you can report issues
 on the Github project page: https://github.com/mighty-p/t2scan
 
 5 Credits
