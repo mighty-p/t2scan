@@ -101,6 +101,6 @@ on the Github project page: https://github.com/mighty-p/t2scan
 - "Wicky" for testing with Airstar2/Zarlink MT352 DVB-T
 - "kilroy" for testing with Airstar2/Zarlink MT352 DVB-T and Avermedia
 - "Fabrizio" for testing with Airstar2/Zarlink MT352 DVB-T
--  Arturo Martinez <martinez@embl.de> for a huge bunch of tests on DVB-S/DVB-S2
+-  Arturo Martinez <martinez at the server embl dot de> for a huge bunch of tests on DVB-S/DVB-S2
 -  Rolf Ahrenberg for doing DVB-T/T2 tests and suggestions to improve w_scan
 
