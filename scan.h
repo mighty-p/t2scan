@@ -52,15 +52,11 @@ struct t2scan_flags {
    uint32_t    list_id;
    uint8_t     tuning_timeout;
    uint8_t     filter_timeout;
-   uint8_t     get_other_nits;
-   uint8_t     add_frequencies;
    uint8_t     dump_provider;
    uint8_t     vdr_version;
    uint8_t     qam_no_auto;
    uint8_t     ca_select;
-   int         rotor_position;
    uint16_t    api_version;
-   uint16_t    sw_pos;
    uint16_t    codepage;
    uint8_t     print_pmt;
    uint8_t     emulate;

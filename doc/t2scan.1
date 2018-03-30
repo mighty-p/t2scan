@@ -5,14 +5,7 @@ t2scan \- a small channel scan tool which generates DVB\-T/T2 channels.conf file
 .B t2scan
 .br
 .B t2scan
-.B -ft
-.I -c \<COUNTRY_ID\> 
 .B [ options ] 
-.br
-.B t2scan
-.B -fa
-.I -c \<COUNTRY_ID\> 
-.B [ options ]  
 .SH "DESCRIPTION"
 .B t2scan
 scans for DVB\-T, DVB\-T2 channels. ATSC is supported, but untested.
@@ -24,12 +17,11 @@ provides the channels in different output formats (Default: VDR channels.conf). 
 .SH "OPTIONS"
 The following options are available.
 .TP 
-.B \-f TYPE
-Frontend type,
-.br
-"a" = ATSC (untested),
-.br
-"t" = DVB-T (and ISDB-T) [default]
+.B \-c N
+specify lowest channel to scan,
+.TP 
+.B \-C N
+specify highest channel to scan,
 .TP 
 .B \-t TYPE
 specify DVB-T type to scan,
@@ -40,14 +32,67 @@ specify DVB-T type to scan,
 .br
 2 = DVB-T2 only.
 .TP 
-.B \-k N
-specify lowest channel to scan,
+.B \-o FORMAT
+output format for the detected services
+.br
+gstreamer = channels.conf for dvbsrc plugin,
+.br
+mplayer   = mplayer output,
+.br
+vdr       = channels.conf for vdr >=2.1 [default],
+.br
+vdr20     = channels.conf for vdr 2.0.x,
+.br
+vlc       = VLC xspf playlist (experimental),
+.br
+xine      = tzap/czap/xine output,
+.br
+xml       = w_scan XML tuning data.
 .TP 
-.B \-K N
-specify highest channel to scan,
-
+.B \-E
+Exclude encrypted channels from output
+.TP
+.B \-s TYPES
+specify service types to be included in output
+.br
+t = include TV channels in output [default: on],
+.br
+r = include radio channels in output [default: on],
+.br
+o = include other services in output [default: off],
+.br
+Example: "\-s tro" includes everything in output,
+.br
+Example: "\-s t" includes only TV channels in output.
 .TP 
-.B \-c COUNTRY_ID
+.B \-V
+show version
+.TP 
+.B \-h
+show help
+.TP 
+.B \-H
+show expert help
+.SH "EXPERT OPTIONS"
+.TP
+.B \-L N
+override the channel list to be used
+.br
+0 = Europe, UHF channels below 790 MHz [default for European countries],
+.br
+1 = Europe, UHF channels below 700 MHz,
+.br
+2 = Europe, all UHF channels,
+.br
+3 = Europe, all VHF and UHF channels,
+.br
+4 = France, specific list with offsets,
+.br
+5 = GB, specific list with offsets,
+.br
+6 = Australia [default for Australia]
+.TP 
+.B \-Y COUNTRY_ID
 Specifies the country where you try to scan for channels as uppercase two letter identifier, e.g.
 .br
 DE = Germany,
@@ -56,47 +101,9 @@ US = United States,
 .br
 FR = France
 .br
-Use "-c?" for a list of all known identifiers.
+Use "-Y?" for a list of all known identifiers. Default is auto-detection from system settings.
 .TP 
-.B \-A N
-specify ATSC scan type
-.br
-1 = terrestrial [default],
-.br
-2 = cable,
-.br
-3 = both, cable and terrestrial.
-.TP 
-.B \-o N
-VDR channels.conf format
-.br
-2 = VDR\-2.0 [default],
-.br
-21 = VDR\-2.1
-.TP 
-.B \-X
-generate zap/czap/xine output instead of VDR channels.conf.
-.TP 
-.B \-k
-generate channels.dvb for kaffeine instead of VDR channels.conf.
-.TP 
-.B \-L
-generate VLC xspf playlist (experimental)
-.TP 
-.B \-M
-mplayer output instead of vdr channels.conf
-.TP 
-.B \-G
-generate output for Gstreamer dvbsrc plugin
-.TP 
-.B \-h
-show help
-.TP 
-.B \-H
-show expert help
-.SH "EXPERT OPTIONS"
-.TP 
-.B \-C CHARSET
+.B \-I CHARSET
 specifies the output charset, i.e. "UTF-8", "ISO-8859-15"
 .br
 use 'iconv --list' to see full list of charsets.
@@ -107,47 +114,16 @@ verbose (repeat for more)
 .B \-q
 quiet (repeat for less)
 .TP 
-.B \-R N
-Radio channels
-.br
-0 = don't search radio channels
-.br
-1 = search radio channels [default]
-.TP 
-.B \-T N
-TV channels
-.br
-0 = don't search TV channels,
-.br
-1 = search TV channels [default]
-.TP 
-.B \-O N
-Other services
-.br
-0 = don't search other services,
-.br
-1 = search other services [default]
-.TP 
-.B \-E N
-Conditional access / encrypted channels
-.br
-0 = only Free TV channels,
-.br
-1 = include encrypted channels [default]
-.TP 
 .B \-a N
 use device /dev/dvb/adapterN/ [default: auto detect]
 .br
 (also allowed: -a /dev/dvb/adapterN/frontendM)
-.br
-.I
-NOTE: This option is deprecated and should be usually omitted.
 .TP 
 .B \-F
 Long filter timeout for reading data from hardware. 
 .TP 
-.B \-s N
-Tuning timeout (speed), increasing may help if device tunes slowly or has bad reception.
+.B \-S N
+Tuning speed (lock timeout), increasing may help if device tunes slowly or has bad reception.
 .br
 1 = fastest [default],
 .br
@@ -155,46 +131,48 @@ Tuning timeout (speed), increasing may help if device tunes slowly or has bad re
 .br
 3 = slowest
 .TP 
-.B \-i N
-spectral inversion setting for cable TV
-.br
-0 = off,
-.br
-1 = on,
-.br
-2 = auto [default]
-.TP 
 .B \-P
 ATSC scan: do not use ATSC PSIP tables for scan (PAT and PMT only)
+.TP 
+.B \-m MODE
+Scan mode,
+.br
+"t" = DVB-T (and ISDB-T) [default]
+.br
+"a" = ATSC (untested),
+.br
+.TP 
+.B \-A N
+specify ATSC scan type
+.br
+1 = terrestrial [default],
+.br
+2 = cable,
+.br
+3 = both, cable and terrestrial.
 .SH "EXAMPLES"
 .TP
 scan aerial (DVB-T/T2):
 .B t2scan
 .TP
+scan aerial (DVB-T/T2), exclude encrypted services from output:
+.B t2scan -E
+.TP
 scan aerial (DVB-T2 only):
-.B t2scan -t2
+.B t2scan -t 2
 .TP
 scan aerial from channel 21 to channel 32:
-.B t2scan -k 21 -K 32
+.B t2scan -c 21 -C 32
 .TP
-scan aerial (DVB-T only), France:
-.B t2scan -c FR -t1
-.TP
-scan cable (ATSC), United States:
-.B t2scan -fa -A2 -c US
-.TP
-scan aerial (ATSC), United States:
-.B t2scan -fa -A1 -c US
-.TP
-use output format kaffeine:
-.B t2scan [ OTHER OPTIONS ] -k
+use output format vlc:
+.B t2scan [ OTHER OPTIONS ] -o vlc
 .TP
 use output format zap/czap/xine:
-.B t2scan [ OTHER OPTIONS ] -X
+.B t2scan [ OTHER OPTIONS ] -o xine
 .SH "REPORTING BUGS"
 see README file from source code package.
 .SH "AUTHOR"
-Written by mighty_p, based on w_scan by W.Koehler
+Written by mighty-p, based on w_scan by W.Koehler
 .PP 
 Permission is granted to copy, distribute and/or modify this document under
 the terms of the GNU General Public License, Version 2 any

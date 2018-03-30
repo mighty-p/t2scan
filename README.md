@@ -13,7 +13,7 @@ The differences are:
 t2scan vs w_scan:
 - Simplified scanning: The scan happens in one run and the NIT is only used to get the parameters of the *current* channel. This design decision was made since I noticed that often the NIT data referring to other channels is not reliable for DVB-T/T2, leading to channels not being found or having wrong IDs resulting in a non-working EPG in vdr. The approach should work with most current DVB-T/T2 cards since they can autodetect most parameters of a transponder when tuning. For DVB-S, this approach would result in many channels not being found, therefore I removed DVB-S (and -C) support.
 - Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-s".
-- Added a parameter to determine the lowest channel to scan ("-k") and the highest channel to scan ("-K"). This makes the scan much faster if the user knows which channels are used in the user's region.
+- Added a parameter to determine the lowest channel to scan ("-c") and the highest channel to scan ("-C"). This makes the scan much faster if the user knows which channels are used in the user's region.
 - Only DVB-T/T2 (ATSC available, but untested), support for DVB-C and DVB-S/S2 has been removed.
 - Removed several options, trying to keep this tool very simple.
 
@@ -78,11 +78,15 @@ To scan only for DVB-T2 channels: `t2scan -t2`
 
 To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
 
-To scan only channels 21 to 49: `t2scan -k21 -K49`
+To scan only channels 21 to 49: `t2scan -c21 -C49`
 
-Per default, t2scan takes a channel list for Germany to scan. This should, however, also be OK in some other countries in Europe. For me, it also worked in Luxembourg and France. Use the `-c` parameter to switch to a different channel list, e.g. the one for Great Britain: `t2scan -c GB`
+To exclude encrypted services from output: `t2scan -E`
 
-For more sophisticated scan options see `t2scan -h`.
+To create channel data for xine (instead of vdr): `t2scan -o xine`
+
+t2scan detects your country from your system settings and uses an appropriate channel list to scan. Use the `-y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually. Normally this should not be needed since for most countries the generic channel list for Europe is used.
+
+For standard t2scan options see `t2scan -h`. For expert options, see `t2scan -H`.
 
 3 Copyright
 -----------

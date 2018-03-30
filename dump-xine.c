@@ -89,10 +89,7 @@ void xine_dump_dvb_parameters (FILE * f, struct transponder * t, struct t2scan_f
                                 fatal("Unknown Polarization %d\n", t->polarization);
                         }
 
-                if (flags->rotor_position > 0)
-                        fprintf (f, "%i:", flags->rotor_position);
-                else
-                        fprintf (f, "0:");
+                fprintf (f, "0:");
 
                 fprintf (f, "%i", t->symbolrate / 1000);
                 break;

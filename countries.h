@@ -46,6 +46,10 @@ enum channellist_t {
         ISDBT_6MHZ              = 11,
         DAB_DE                  = 12,
         DVBT2_CO                = 13,
+        DVBT_EU_VHFUHF          = 14,
+        DVBT_EU_UHF             = 15,
+        DVBT_EU_UHF800          = 16,
+        DVBT_EU_UHF700          = 17,
         USERLIST                = 999
 };
 

@@ -1,6 +1,20 @@
 ChangeLog:
 ----------
-2018-03-08
+2018-03-30
+ - refactor the options:
+    - "-c" and "-C" (for *c*hannel) to determine lowest and highest channel
+    - The old "-c" has been renamed to "-Y" (for countr*y*)
+    - One parameter "-o" for output format, and one "-O" for the type of 
+      services to be included in output. Also "-E" to omit encrypted services.
+    - For Europe (incl. France and GB) we use now a channel list with only
+      UHF channels below 790 MHz and don't use offsets. Added an option "-L"
+      to override the channel list if needed.
+    - Use vdr 2.1.x format as default output (can be changed with "-o").
+    - Worked on help ("-h") and expert help ("-H").
+    - Changed version string to 20180403.
+    - Created files README, COPYING and NEWS to make sure the build process
+      works for more Linux distributions (e.g. Gentoo).
+2018-03-28
  - creating first release. The differences between t2scan and w_scan are:
     - Simplified scanning: The scan happens in one run and the NIT is only used
       to get the parameters of the *current* channel. This design decision was

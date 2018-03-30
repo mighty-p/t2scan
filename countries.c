@@ -194,7 +194,7 @@ int choose_country (const char * country,
                                         info("DVB-C\n");
                                         break;
                                 default:
-                                        *channellist = DVBT_DE;
+                                        *channellist = DVBT_EU_UHF800;
                                         info("DVB-T Europe\n");
                                         break;               
                                 }
@@ -207,7 +207,7 @@ int choose_country (const char * country,
                                         info("DVB-C FI\n");
                                         break;
                                 default:
-                                        *channellist = DVBT_DE;
+                                        *channellist = DVBT_EU_UHF800;
                                         info("DVB-T Europe\n");
                                         break;               
                                 }
@@ -219,8 +219,8 @@ int choose_country (const char * country,
                                         info("DVB-C FR\n");
                                         break;
                                 default:
-                                        *channellist = DVBT_FR;
-                                        info("DVB-T FR\n");
+                                        *channellist = DVBT_EU_UHF800;
+                                        info("DVB-T Europe\n");
                                         break;               
                                 }
                         break;
@@ -231,8 +231,8 @@ int choose_country (const char * country,
                                         info("DVB-C\n");
                                         break;
                                 default:
-                                        *channellist = DVBT_GB;
-                                        info("DVB-T GB\n");
+                                        *channellist = DVBT_EU_UHF800;
+                                        info("DVB-T Europe\n");
                                         break;               
                                 }
                         break;
@@ -341,12 +341,30 @@ switch (channellist) {
         case DVBT_DE:  //GERMANY
         case DVBT_FR:  //FRANCE, +/- offset 166kHz & +offset 332kHz & +offset 498kHz
         case DVBT_GB:  //UNITED KINGDOM, +/- offset
+        case DVBT_EU_UHF:
                 switch (channel) {
                         //case  5 ... 12: return  142500000; // VHF no longer used in Europe.
                         case 21 ... 69: return  306000000;
                         default:        return  SKIP_CHANNEL;
                         }
-
+        case DVBT_EU_UHF700:
+                switch (channel) {
+                        //case  5 ... 12: return  142500000; // VHF no longer used in Europe.
+                        case 21 ... 49: return  306000000;
+                        default:        return  SKIP_CHANNEL;
+                        }
+        case DVBT_EU_UHF800:
+                switch (channel) {
+                        //case  5 ... 12: return  142500000; // VHF no longer used in Europe.
+                        case 21 ... 60: return  306000000;
+                        default:        return  SKIP_CHANNEL;
+                        }
+        case DVBT_EU_VHFUHF:
+                switch (channel) {
+                        case  5 ... 12: return  142500000; // VHF no longer used in Europe.
+                        case 21 ... 69: return  306000000;
+                        default:        return  SKIP_CHANNEL;
+                        }
         case DVBC_QAM: //EUROPE
                 switch (channel) {
                         case  0 ... 1:  
@@ -385,6 +403,10 @@ switch (channellist) {
         case DVBT_AU:  return  7000000; // dvb-t australia, 7MHz step
         case DVBT_DE:
         case DVBT_FR:
+        case DVBT_EU_VHFUHF:
+        case DVBT_EU_UHF:
+        case DVBT_EU_UHF800:
+        case DVBT_EU_UHF700:
         case DVBT_GB:  switch (channel) { // dvb-t europe, 7MHz VHF ch5..12, all other 8MHz
                               case  5 ... 12:    return 7000000;
                               case 21 ... 69:    return 8000000;
@@ -603,7 +625,7 @@ int atsc_is_qam(int atsc) {
 struct cCountry country_list[] = {
 /*- ISO 3166-1 - unique id - long country name                 alpha-3 numeric */
        {"AF", AF, "AFGHANISTAN"},                                  /*AFG, 4  },*/
-       {"AX", AX, "ÅLAND ISLANDS"},                                /*ALA, 248},*/
+       {"AX", AX, "Ã…LAND ISLANDS"},                                /*ALA, 248},*/
        {"AL", AL, "ALBANIA"},                                      /*ALB, 8  },*/
        {"DZ", DZ, "ALGERIA"},                                      /*DZA, 12 },*/
        {"AS", AS, "AMERICAN SAMOA"},                               /*ASM, 16 },*/
@@ -656,10 +678,10 @@ struct cCountry country_list[] = {
        {"CD", CD, "CONGO, THE DEMOCRATIC REPUBLIC OF THE"},        /*COD, 180},*/
        {"CK", CK, "COOK ISLANDS"},                                 /*COK, 184},*/
        {"CR", CR, "COSTA RICA"},                                   /*CRI, 188},*/
-       {"CI", CI, "CÔTE D'IVOIRE"},                                /*CIV, 384},*/
+       {"CI", CI, "CÃ”TE D'IVOIRE"},                                /*CIV, 384},*/
        {"HR", HR, "CROATIA"},                                      /*HRV, 191},*/
        {"CU", CU, "CUBA"},                                         /*CUB, 192},*/
-       {"CW", CW, "CURAÇAO"},                                      /*CUW, 531},*/
+       {"CW", CW, "CURAÃ‡AO"},                                      /*CUW, 531},*/
        {"CY", CY, "CYPRUS"},                                       /*CYP, 196},*/
        {"CZ", CZ, "CZECH REPUBLIC"},                               /*CZE, 203},*/
        {"DK", DK, "DENMARK"},                                      /*DNK, 208},*/
@@ -782,11 +804,11 @@ struct cCountry country_list[] = {
        {"PT", PT, "PORTUGAL"},                                     /*PRT, 620},*/
        {"PR", PR, "PUERTO RICO"},                                  /*PRI, 630},*/
        {"QA", QA, "QATA"},                                         /*QAT, 634},*/
-       {"RE", RE, "RÉUNION"},                                      /*REU, 638},*/
+       {"RE", RE, "RÃ‰UNION"},                                      /*REU, 638},*/
        {"RO", RO, "ROMANIA"},                                      /*ROU, 642},*/
        {"RU", RU, "RUSSIAN FEDERATION"},                           /*RUS, 643},*/
        {"RW", RW, "RWANDA"},                                       /*RWA, 646},*/
-       {"BL", BL, "SAINT BARTHÉLEMY"},                             /*BLM, 652},*/
+       {"BL", BL, "SAINT BARTHÃ‰LEMY"},                             /*BLM, 652},*/
        {"SH", SH, "SAINT HELENA"},                                 /*SHN, 654},*/
        {"KN", KN, "SAINT KITTS AND NEVIS"},                        /*KNA, 659},*/
        {"LC", LC, "SAINT LUCIA"},                                  /*LCA, 662},*/

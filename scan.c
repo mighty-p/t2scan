@@ -96,15 +96,11 @@ struct t2scan_flags flags = {
   DE,               // country index or sat index
   1,                // tuning speed {1 = fast, 2 = medium, 3 = slow}
   0,                // filter timeout {0 = default, 1 = long} 
-  1,                // get_other_nits, atm always
-  1,                // add_frequencies, atm always
   1,                // dump_provider, dump also provider name
-  2,                // VDR version number, VDR-2.0.0
+  21,               // VDR version for output; 2.1+ //changed 20180330
   0,                // 0 = qam auto, 1 = search qams
   1,                // scan encrypted channels = yes
-  -1,               // rotor position, unused
   0x0302,           // assuming DVB API version 3.2
-  0xFF,             // switch pos
   0,                // codepage, 0 = UTF-8
   0,                // print pmt
   0,                // emulate
@@ -118,7 +114,7 @@ static unsigned int dvbc_symbolrate_min = 0;    // initialization of symbolrate 
 static unsigned int dvbc_symbolrate_max = 1;    // initialization of symbolrate loop. 6875
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
-static int this_channellist = DVBT_DE;          // t2scan uses by default DVB-t
+static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T with UHF channels below 790 MHz.
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                
 static unsigned int serv_select = 3;            // 20080106: radio and tv as default (no service/other). 20090227: flag type vars shouldnt be signed. 
@@ -482,81 +478,73 @@ struct service * find_service(struct transponder * t, uint16_t service_id) {
 
 static const char * usage = "\n"
   "usage: %s [options...] \n"
-  "       -f type, --frontend type\n"
-  "               What programs do you want to search for?\n"
-  "               a = atsc (vsb/qam) (UNTESTED)\n"
-//  "               c = cable (UNTESTED)\n"
-  "               t = terrestrian [default]\n"
-  "       -t N, --dvbt_type N\n"
-  "               specify DVB-T type to scan\n"
-  "               0 = DVB-T and DVB-T2 [default]\n"
-  "               1 = DVB-T only\n"
-  "               2 = DVB-T2 only\n"
-  "       -k N, --min-channel N\n"
+  "       ---filter options ---\n"
+  "       -c <N>, --channel-min <N>\n"
   "               lowest channel to scan\n"
-  "       -K N, --max-channel N\n"
+  "       -C <N>, --channel-max <N>\n"
   "               highest channel to scan\n"
-  "       -A N, --atsc_type N\n"
-  "               specify ATSC type\n"
-  "               1 = Terrestrial [default]\n"
-  "               2 = Cable\n"
-  "               3 = both, Terrestrial and Cable\n"
-  "       -c, --country\n"
-  "               choose your country here:\n"
-  "                       DE, GB, US, AU, ..\n"
-  "                       ? for list\n"
-  "               \n"
-  "               ---output switches---\n"
-  "       -G, --output-dvbsrc\n"
-  "               generate channels.conf for dvbsrc plugin\n"
-  "       -L, --output-VLC\n"
-  "               generate VLC xspf playlist (experimental)\n"
-  "       -M, --output-mplayer\n"
-  "               mplayer output instead of vdr channels.conf\n"
-  "       -X, --output-xine\n"
-  "               tzap/czap/xine output instead of vdr channels.conf\n"
-  "       -Z, --output-xml\n"
-  "               generate w_scan XML tuning data\n"
-  "       -H, --extended-help\n"
-  "               view extended help (experts only)\n";
+  "       -t <N>, --dvbt_type <N>\n"
+  "               specify DVB-T type to scan\n"
+  "                 0 = DVB-T and DVB-T2 [default]\n"
+  "                 1 = DVB-T only\n"
+  "                 2 = DVB-T2 only\n"
+  "       ---output options---\n"
+  "       -o <format>, --output-format <format>\n"
+  "               determine output format\n"
+  "                 gstreamer = channels.conf for dvbsrc plugin\n"
+  "                 mplayer   = mplayer output\n"
+  "                 vdr       = channels.conf for vdr >=2.1 [default]\n"
+  "                 vdr20     = channels.conf for vdr 2.0.x\n"
+  "                 vlc       = VLC xspf playlist (experimental)\n"
+  "                 xine      = tzap/czap/xine output\n"
+  "                 xml       = w_scan XML tuning data\n"
+  "       -E, --no-encrypted\n"
+  "               exclude encrypted services from output\n"
+  "       -s <list of services>, --output-services  <list of services>\n"
+  "               specify types of services to be included in output\n"
+  "                 t = include TV channels in output [default: on]\n"
+  "                 r = include radio channels in output [default: on]\n"
+  "                 o = include other services in output [default: off]\n"
+  "               Example: \"-s tro\" includes everything in output\n"
+  "               Example: \"-s t\" includes only TV channels in output\n"
+  "       ---other options---\n"
+  "       -V      show version of t2scan\n"
+  "       -h      show this help\n"
+  "       -H      show expert help (additional options)\n";
 
 static const char * ext_opts = "%s expert help\n"
+  ".................Filter Options..........\n"
+  "       -L <channel-list>, --channel-list <channel-list>\n"
+  "               one of the following generic channel lists for Europe:\n"
+  "                  0: Europe, UHF channels below 790 MHz [default]\n"
+  "                  1: Europe, UHF channels below 700 MHz\n"
+  "                  2: Europe, all UHF channels\n"
+  "                  3: Europe, all VHF and UHF channels\n"
+  "                  4: France, specific list with offsets\n"
+  "                  5: GB, specific list with offsets\n"
+  "                  6: Australia\n"
+  "       -Y <country>, --country <country>\n"  
+  "               use settings for a specific country:\n"
+  "                 DE, GB, US, AU, .., ? for list [default: auto-detect]\n"
   ".................General.................\n"
-  "       -C <charset>, --charset <charset>\n"
+  "       -I <charset>, --charset <charset>\n"
   "               convert to charset, i.e. 'UTF-8', 'ISO-8859-15'\n"
   "               use 'iconv --list' for full list of charsets.\n"
   "       -v, --verbose\n"
   "               be more verbose (repeat for more)\n"
   "       -q, --quiet\n"
   "               be more quiet   (repeat for less)\n"
-  ".................Services................\n"
-  "       -R N, --radio-services N\n"
-  "               0 = don't search radio channels\n"
-  "               1 = search radio channels [default]\n"
-  "       -T N, --tv-services N\n"
-  "               0 = don't search TV channels\n"
-  "               1 = search TV channels[default]\n"
-  "       -O N, --other-services N\n"
-  "               0 = don't search other services [default]\n"
-  "               1 = search other services\n"
-  "       -E N, --encrypted-services (Conditional Access)\n"
-  "               N=0 gets only Free TV channels\n"
-  "               N=1 search also encrypted channels [default]\n"
-  "       -o N, --output-vdr N\n"
-  "               specify VDR version / channels.conf format\n"
-  "               2  = VDR-2.0.x (default)\n"
-  "               21 = VDR-2.1.x\n"
   ".................Device..................\n"
-  "       -a N, --adapter N\n"
+  "       -a <N>, --adapter <N>\n"
   "               use device /dev/dvb/adapterN/ [default: auto detect]\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
   "       -F, --long-demux-timeout\n"
   "               use long filter timeout\n"
-  "       -s N, --lock-timeout N\n"
-  "               tuning timeout (speed)\n"
-  "               1 = fastest [default]\n"
-  "               2 = medium\n"
-  "               3 = slowest\n"
+  "       -S <N>, --lock-timeout <N>\n"
+  "               tuning speed (lock timeout)\n"
+  "                 1 = fastest [default]\n"
+  "                 2 = medium\n"
+  "                 3 = slowest\n"
 //  ".................DVB-C...................\n"
 //  "       -i N, --inversion N\n"
 //  "               spectral inversion setting for cable TV\n"
@@ -599,46 +587,49 @@ static const char * ext_opts = "%s expert help\n"
 //  "                       16 = 4.0000 MSymbol/s\n"
 //  "                       17 = 3.4500 MSymbol/s\n"
 //  "               NOTE: for experienced users only!!\n"
-  ".................ATSC....................\n"
+  ".................ATSC (untested).........\n"
+  "       -m <mode>, --scan-mode <mode>\n"
+  "               t2scan supports the following scan modes:\n"
+  "               t = DVB-T [default]\n"
+  "               a = ATSC (vsb/qam) (UNTESTED)\n"
+  "       -A <N>, --atsc_type <N>\n"
+  "               specify ATSC type\n"
+  "               1 = Terrestrial [default]\n"
+  "               2 = Cable\n"
+  "               3 = both, Terrestrial and Cable\n"
   "       -P, --use-pat\n"
   "               do not use ATSC PSIP tables for scanning\n"
   "               (but only PAT and PMT) (applies for ATSC only)\n";
 
 /*no_argument, required_argument and optional_argument. */
 static struct option long_options[] = {
-    {"frontend"          , required_argument, NULL, 'f'},
+    {"scan-mode"         , required_argument, NULL, 'm'},
+    //---
     {"atsc_type"         , required_argument, NULL, 'A'},
     {"dvbt_type"         , required_argument, NULL, 't'},
-    {"country"           , required_argument, NULL, 'c'},
     //---
-    {"output-dvbsrc"     , no_argument      , NULL, 'G'},
-    {"output-VLC"        , no_argument      , NULL, 'L'},
-    {"output-mplayer"    , no_argument      , NULL, 'M'},
-    {"output-xine"       , no_argument      , NULL, 'X'},
-    {"output-xml"        , no_argument      , NULL, 'Z'},
+    {"country"           , required_argument, NULL, 'Y'},
+    {"channel-list"      , required_argument, NULL, 'L'},
+    {"channel-min"       , required_argument, NULL, 'c'},
+    {"channel-max"       , required_argument, NULL, 'C'},
+    {"no-encrypted"      , no_argument      , NULL, 'E'},
+    //---
+    {"output-format"     , required_argument, NULL, 'o'},
     {"help"              , no_argument      , NULL, 'h'},
     //---
-    {"min-channel"       , required_argument, NULL, 'k'},
-    {"max-channel"       , required_argument, NULL, 'K'},
     {"extended-help"     , no_argument      , NULL, 'H'},
-    {"charset"           , required_argument, NULL, 'C'},
-    {"initial"           , required_argument, NULL, 'I'},
+    {"charset"           , required_argument, NULL, 'I'},
     {"verbose"           , no_argument      , NULL, 'v'},
     {"debug"             , no_argument      , NULL, '!'},
     {"quiet"             , no_argument      , NULL, 'q'},
-    {"radio-services"    , required_argument, NULL, 'R'},
-    {"tv-services"       , required_argument, NULL, 'T'},
-    {"other-services"    , required_argument, NULL, 'O'},
-    {"encrypted-services", required_argument, NULL, 'E'},
-    {"output-vdr"        , required_argument, NULL, 'o'},
     {"adapter"           , required_argument, NULL, 'a'},
     {"long-demux-timeout", no_argument,       NULL, 'F'},
-    {"lock-timeout"      , required_argument, NULL, 's'},
+    {"output-services"   , required_argument, NULL, 's'},
+    {"lock-timeout"      , required_argument, NULL, 'S'},
 //    {"inversion"         , required_argument, NULL, 'i'},
 //    {"dvbc-modulation"   , required_argument, NULL, 'Q'},
 //    {"dvbc-extflags"     , required_argument, NULL, 'e'},
 //    {"dvbc-symbolrate"   , required_argument, NULL, 'S'},
-//    {"lnb-type"          , required_argument, NULL, 'l'},
     {"use-pat"           , required_argument, NULL, 'P'},
     {NULL                , 0                , NULL,  0 },
 };
@@ -1959,30 +1950,8 @@ static void scan_tp(void) {
   struct section_buf s[4];
   int result = 0;
 
-  // first run: read PAT, but dont read PMT (~0.5sec)
-  //   - to enshure that current_tp->transport_stream_id is set.
-  //   - to update network_PID (default: 0x10).
+  // scan for services: start filters for SDT and PAT (slowest filters first)
 
-// PAT and NIT already read. so I've commented the next 2 sections out
-/*
-  current_tp->network_PID = PID_NIT_ST;
-  setup_filter(&s[0], demux_devname, PID_PAT, TABLE_PAT, -1, 1, 0, SECTION_FLAG_INITIAL);
-  add_filter(&s[0]);
-  EMUL(em_readfilters, &result)
-  do { read_filters(); }
-     while((running_filters->count > 0) || (waiting_filters->count > 0));
-*/
-
-  // second run: now all filters; start slowest filters first.
-/*
-  setup_filter(&s[0], demux_devname, current_tp->network_PID, TABLE_NIT_ACT, -1, 1, 0, 0);
-  add_filter(&s[0]);
-  if (flags.get_other_nits > 0) {
-     // Note: There is more than one NIT-other: one per network, separated by the network_id.
-     setup_filter(&s[1], demux_devname, current_tp->network_PID, TABLE_NIT_OTH, -1, 1, 1, 0);
-     add_filter(&s[1]);
-     }
-*/
   setup_filter(&s[2], demux_devname, PID_SDT_BAT_ST, TABLE_SDT_ACT, -1, 1, 0, 0);
   add_filter(&s[2]);
 
@@ -2323,11 +2292,12 @@ int main(int argc, char ** argv) {
   int Radio_Services = 1;
   int TV_Services = 1;
   int Other_Services = 0; // 20080106: don't search other services by default.
-  int ext = 0;
+//  int ext = 0;
   int retVersion = 0;
   int device_preferred = -1;
   int valid_initial_data = 0;
   int modulation_flags = MOD_USE_STANDARD;
+  int override_channellist = -1;
   char * country = NULL;
   char * codepage = NULL;
   char * satellite = NULL;
@@ -2347,7 +2317,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:e:f:hik:o:q:s:t:vA:C:E:FGHK:LMO:P:R:T:VXZ", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:hm:o:q:s:t:vA:C:EFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2363,67 +2333,6 @@ int main(int argc, char ** argv) {
                    }                   
                 }
              break;
-     case 'c': //country setting
-             if (0 == strcasecmp(optarg, "?")) {
-                print_countries();
-                cleanup();
-                return(0);
-                }
-             cl(country);
-             country=strdup(optarg);
-             break;
-     case 'e': //extended scan flags
-             ext = strtoul(optarg, NULL, 0);
-             if (ext & 0x01)
-                dvbc_symbolrate_max = 17;
-             if (ext & 0x02) {
-                modulation_max = 2;
-                modulation_flags |= MOD_OVERRIDE_MAX;
-                }
-             break;
-     case 'f': //frontend type -> hmmm..., actually it's scan type now! 20120109, -wk-
-             if (strcmp(optarg, "t") == 0) scantype = SCAN_TERRESTRIAL;
-//             if (strcmp(optarg, "c") == 0) scantype = SCAN_CABLE;
-             if (strcmp(optarg, "a") == 0) scantype = SCAN_TERRCABLE_ATSC;
-             if (scantype == SCAN_TERRCABLE_ATSC) {
-                this_channellist = ATSC_VSB;
-                country = strdup("US");
-                }
-             break;
-     case 'h': //basic help
-             bad_usage("t2scan");
-             cleanup();
-             return 0;
-             break;
-     case 'i': //specify inversion
-             caps_inversion = strtoul(optarg, NULL, 0);
-             break;
-     case 'k': // lowest channel to scan
-             flags.channel_min = strtoul(optarg, NULL, 0);
-             if ((flags.channel_min > 133)) bad_usage(argv[0]);
-             break;
-     case 'o': //vdr Version
-             flags.vdr_version = strtoul(optarg, NULL, 0);
-             break;
-     case 'q': //quite
-             if (--verbosity < 0)
-                verbosity = 0;
-             break;
-     case 's': //tuning speed, in w_scan this option was 't'
-             flags.tuning_timeout = strtoul(optarg, NULL, 0);
-             if ((flags.tuning_timeout < 1)) bad_usage(argv[0]);
-             if ((flags.tuning_timeout > 3)) bad_usage(argv[0]);
-             break;
-     case 't': // dvb-t modes to scan (0=all, 1=DVB-T, 2=DVB-T2)
-             flags.dvbt_type = strtoul(optarg, NULL, 0);
-             if ((flags.dvbt_type > 2)) bad_usage(argv[0]);
-             break;
-     case 'v': //verbose
-             verbosity++;
-             break;
-     case '!': //debug
-             verbosity=5;
-             break;
      case 'A': //ATSC type
              ATSC_type = strtoul(optarg,NULL,0);
              switch(ATSC_type) {
@@ -2438,68 +2347,110 @@ int main(int argc, char ** argv) {
              /* if -A is specified, it implies -f a */
              scantype = SCAN_TERRCABLE_ATSC;
              break;
-     case 'C': // charset
-             codepage = strdup(optarg);
+     case 'c': // lowest channel to scan
+             flags.channel_min = strtoul(optarg, NULL, 0);
+             if ((flags.channel_min > 133)) bad_usage(argv[0]);
              break;
-     case 'E': //include encrypted channels
-             flags.ca_select = strtoul(optarg, NULL, 0);
+     case 'C': // highest channel to scan
+             flags.channel_max = strtoul(optarg, NULL, 0);
+             if ((flags.channel_max > 133)) bad_usage(argv[0]);
+             break;
+     case 'E': //exclude encrypted channels
+             flags.ca_select = 0;
              break;
      case 'F': //filter timeout
              flags.filter_timeout = 1;
              break;
-     case 'G':
-             output_format = OUTPUT_GSTREAMER;
+     case 'h': // help
+             bad_usage("t2scan");
+             cleanup();
+             return 0;
              break;
      case 'H': //expert help
              ext_help();
              cleanup();
              return 0;
              break;
-     case 'K': // highest channel to scan
-             flags.channel_max = strtoul(optarg, NULL, 0);
-             if ((flags.channel_max > 133)) bad_usage(argv[0]);
+     case 'I': // iconv to charset (-C in w_scan)
+             codepage = strdup(optarg);
              break;
-     case 'L': //vlc output
-             output_format = OUTPUT_VLC_M3U;
+     case 'L': // channel list setting, default channel list for country is automatically set
+             override_channellist = strtoul(optarg, NULL, 0);
              break;
-     case 'M': //mplayer output
-             output_format = OUTPUT_MPLAYER;
+     case 'm': // scan mode (t=dvb-t [default], a=atsc)
+             if (strcmp(optarg, "t") == 0) scantype = SCAN_TERRESTRIAL;
+//             if (strcmp(optarg, "c") == 0) scantype = SCAN_CABLE;
+             if (strcmp(optarg, "a") == 0) scantype = SCAN_TERRCABLE_ATSC;
+             if (scantype == SCAN_TERRCABLE_ATSC) {
+                this_channellist = ATSC_VSB;
+                country = strdup("US");
+                }
              break;
-     case 'O': //other services
-             Other_Services = strtoul(optarg, NULL, 0);
-             if ((Other_Services < 0)) bad_usage(argv[0]);
-             if ((Other_Services > 1)) bad_usage(argv[0]);
+     case 'o': //output format
+             if (strcmp(optarg, "xine") == 0) output_format = OUTPUT_XINE;
+             else if (strcmp(optarg, "xml") == 0) output_format = OUTPUT_XML;
+             else if (strcmp(optarg, "mplayer") == 0) output_format = OUTPUT_MPLAYER;
+             else if (strcmp(optarg, "vlc") == 0) output_format = OUTPUT_VLC_M3U;
+             else if (strcmp(optarg, "gstreamer") == 0) output_format = OUTPUT_GSTREAMER;
+             else if (strcmp(optarg, "vdr20") == 0) {
+                output_format = OUTPUT_VDR;
+                flags.vdr_version = 2;
+             } else {
+                output_format = OUTPUT_VDR;
+                flags.vdr_version = 21;
+             }
              break;
      case 'P': //ATSC PSIP scan
              no_ATSC_PSIP = 1;
              break;
-//     case 'Q': //specify DVB-C QAM
-//             modulation_min=modulation_max=strtoul(optarg, NULL, 0);
-//             modulation_flags |= MOD_OVERRIDE_MIN;
-//             modulation_flags |= MOD_OVERRIDE_MAX;
-//             break;
-     case 'R': //include Radio
-             Radio_Services = strtoul(optarg, NULL, 0);
-             if ((Radio_Services < 0)) bad_usage(argv[0]);
-             if ((Radio_Services > 1)) bad_usage(argv[0]);
+     case 'q': //quiet
+             if (--verbosity < 0)
+                verbosity = 0;
              break;
-//     case 'S': //DVB-C symbolrate index
-//             dvbc_symbolrate_min=dvbc_symbolrate_max=strtoul(optarg, NULL, 0);
-//             break;
-     case 'T': //include TV
-             TV_Services = strtoul(optarg, NULL, 0);
-             if ((TV_Services < 0)) bad_usage(argv[0]);
-             if ((TV_Services > 1)) bad_usage(argv[0]);
+     case 's': // included services in output
+             TV_Services = (strstr(optarg, "t"))? 1: 0;
+             Radio_Services = (strstr(optarg, "r"))? 1: 0;
+             Other_Services = (strstr(optarg, "o"))? 1: 0;
+             break;
+     case 'S': //tuning speed, in w_scan this option was 't'
+             flags.tuning_timeout = strtoul(optarg, NULL, 0);
+             if ((flags.tuning_timeout < 1)) bad_usage(argv[0]);
+             if ((flags.tuning_timeout > 3)) bad_usage(argv[0]);
+             break;
+     case 't': // dvb-t modes to scan (0=all, 1=DVB-T, 2=DVB-T2)
+             flags.dvbt_type = strtoul(optarg, NULL, 0);
+             if ((flags.dvbt_type > 2)) bad_usage(argv[0]);
+             break;
+     case 'v': //verbose
+             verbosity++;
              break;
      case 'V': //Version
              retVersion++;
              break;
-     case 'X': //xine output
-             output_format = OUTPUT_XINE;
+     case 'Y': 
+             if (0 == strcasecmp(optarg, "?")) {
+                print_countries();
+                cleanup();
+                return(0);
+             }
+             cl(country);
+             country=strdup(optarg);             
              break;
-     case 'Z': //w_scan xml output
-             output_format = OUTPUT_XML;
+     case '!': //debug
+             verbosity=5;
              break;
+//     case 'i': //specify inversion (DVB-C)
+//             caps_inversion = strtoul(optarg, NULL, 0);
+//             break;
+//     case 'X': //extended DVB-C scan flags (was 'e' in w_scan)
+//             ext = strtoul(optarg, NULL, 0);
+//             if (ext & 0x01)
+//                dvbc_symbolrate_max = 17;
+//             if (ext & 0x02) {
+//                modulation_max = 2;
+//                modulation_flags |= MOD_OVERRIDE_MAX;
+//                }
+//             break;
      default: //undefined
              cleanup();
              bad_usage(argv[0]);
@@ -2507,7 +2458,7 @@ int main(int argc, char ** argv) {
      }
   }
   if (retVersion) {
-     info("%d", version);
+     info("%d\n", version);
      cleanup();
      return 0;
      }
@@ -2515,13 +2466,13 @@ int main(int argc, char ** argv) {
   if (NULL == initdata) {
       if ((NULL == country) && (scantype != SCAN_SATELLITE)) {
          country = strdup(country_to_short_name(get_user_country()));
-         info("guessing country '%s', use -c <country> to override\n", country);
-         }
+         info("guessing country '%s', use -y <country> to override\n", country);
+      }
       if ((NULL == satellite) && (scantype == SCAN_SATELLITE)) {
          cleanup();
          fatal("Missing argument \"-s\" (satellite setting)\n");
-         }                
-      }
+      }                
+  }
   serv_select = 1 * TV_Services + 2 * Radio_Services + 4 * Other_Services;
   if (caps_inversion > INVERSION_AUTO) {
      info("Inversion out of range!\n");
@@ -2551,7 +2502,17 @@ int main(int argc, char ** argv) {
               modulation_min = dvbc_qam_min(2, this_channellist);
            flags.list_id = txt_to_country(country);
            cl(country);
-           }
+        }
+        switch(override_channellist) {             
+           case 0: this_channellist = DVBT_EU_UHF800; break;
+           case 1: this_channellist = DVBT_EU_UHF700; break;
+           case 2: this_channellist = DVBT_EU_UHF; break;
+           case 3: this_channellist = DVBT_EU_VHFUHF; break;
+           case 4: this_channellist = DVBT_FR; break;
+           case 5: this_channellist = DVBT_GB; break;
+           case 6: this_channellist = DVBT_AU; break;
+           default: break;
+        }
         break;
      
      default:
