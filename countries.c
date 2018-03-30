@@ -185,7 +185,6 @@ int choose_country (const char * country,
                 case    NL:     //      NETHERLANDS
                 case    NO:     //      NORWAY
                 case    NZ:     //      NEW ZEALAND
-                case    PL:     //      POLAND
                 case    SE:     //      SWEDEN
                 case    SK:     //      SLOVAKIA    
                         switch(*dvb) {    
@@ -195,7 +194,7 @@ int choose_country (const char * country,
                                         break;
                                 default:
                                         *channellist = DVBT_EU_UHF800;
-                                        info("DVB-T Europe\n");
+                                        info("DVB-T Europe UHF <790MHz\n");
                                         break;               
                                 }
                         break;
@@ -208,7 +207,19 @@ int choose_country (const char * country,
                                         break;
                                 default:
                                         *channellist = DVBT_EU_UHF800;
-                                        info("DVB-T Europe\n");
+                                        info("DVB-T Europe UHF <790MHz\n");
+                                        break;               
+                                }
+                        break;
+                case    PL:     //      POLAND
+                        switch(*dvb) {    
+                                case SCAN_CABLE:
+                                        *channellist = DVBC_FI;
+                                        info("DVB-C FI\n");
+                                        break;
+                                default:
+                                        *channellist = DVBT_EU_VHFUHF;
+                                        info("DVB-T Europe VHF and UHF\n");
                                         break;               
                                 }
                         break;
@@ -220,7 +231,7 @@ int choose_country (const char * country,
                                         break;
                                 default:
                                         *channellist = DVBT_EU_UHF800;
-                                        info("DVB-T Europe\n");
+                                        info("DVB-T Europe UHF <790MHz\n");
                                         break;               
                                 }
                         break;
@@ -232,7 +243,7 @@ int choose_country (const char * country,
                                         break;
                                 default:
                                         *channellist = DVBT_EU_UHF800;
-                                        info("DVB-T Europe\n");
+                                        info("DVB-T Europe UHF <790MHz\n");
                                         break;               
                                 }
                         break;
