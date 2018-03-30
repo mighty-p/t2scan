@@ -2466,7 +2466,7 @@ int main(int argc, char ** argv) {
   if (NULL == initdata) {
       if ((NULL == country) && (scantype != SCAN_SATELLITE)) {
          country = strdup(country_to_short_name(get_user_country()));
-         info("guessing country '%s', use -y <country> to override\n", country);
+         info("guessing country '%s', use -Y <country> to override\n", country);
       }
       if ((NULL == satellite) && (scantype == SCAN_SATELLITE)) {
          cleanup();
