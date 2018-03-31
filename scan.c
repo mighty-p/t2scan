@@ -2284,18 +2284,24 @@ static void network_scan(int frontend_fd, int tuning_data) {
                        //initial_table_lookup(frontend_fd); // would this work here? Don't know, need Info!
                        break;
                     default:
-                       
+                                             
+
                        if (initial_table_lookup(frontend_fd)) {
                          print_transponder(buffer,current_tp);
-                         int isDuplicate = is_already_found_transponder(current_tp);
-                         if (isDuplicate && flags.dedup) {
-                           info("        skipping.\n");                            
+                         if (flags.dedup) {
+                            int isDuplicate = is_already_found_transponder(current_tp);
+                            if (isDuplicate) {
+                              info("        skipping.\n");                            
+                            } else {
+                               info("        %s : scanning for services\n",buffer);
+                               scan_tp();
+                               AddItem(output_transponders, current_tp);
+                            }
                          } else {
-                            if (isDuplicate) info("        Use option -d to suppress duplicates.\n");
                             info("        %s : scanning for services\n",buffer);
                             scan_tp();
                             AddItem(output_transponders, current_tp);
-                         }
+                         } 
                          AddItem(scanned_transponders, current_tp);
                        }
 
