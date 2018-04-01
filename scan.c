@@ -2032,24 +2032,32 @@ void print_signal_info(int frontend_fd) {
 
   double sigstr = 0.0;
   if (p[0].u.st.len>0) {
-    if (p[1].u.st.stat[0].scale==FE_SCALE_RELATIVE) {
-      sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
-      info("        Signal strength: %2.1f/100\n",sigstr);       
-    } else if (p[0].u.st.stat[0].scale==FE_SCALE_DECIBEL) {
-      sigstr = p[0].u.st.stat[0].svalue/1000.0;
-      info("        Signal strength: %2.1f dB\n",sigstr);       
+    switch (p[1].u.st.stat[0].scale) {
+      case FE_SCALE_RELATIVE:
+        sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
+        info("        Signal strength: %2.1f/100\n",sigstr);
+        break;       
+      case FE_SCALE_DECIBEL:
+        sigstr = p[0].u.st.stat[0].svalue/1000.0;
+        info("        Signal strength: %2.1f dBm\n",sigstr);
+        break;
+      default: break;       
     }
   }
 
 
   double quality = 0.0;
   if (p[1].u.st.len>0) {
-    if (p[1].u.st.stat[0].scale==FE_SCALE_RELATIVE) {
-      quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
-      info("        Signal quality: %2.1f/100\n",quality);       
-    } else if (p[1].u.st.stat[0].scale==FE_SCALE_DECIBEL) {
-      quality = p[1].u.st.stat[0].svalue/1000.0;
-      info("        Signal quality: %2.1f dBm\n",quality);       
+    switch (p[1].u.st.stat[0].scale) {
+      case FE_SCALE_RELATIVE:
+        quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
+        info("        Signal quality: %2.1f/100\n",quality);
+        break;
+      case FE_SCALE_DECIBEL:
+        quality = p[1].u.st.stat[0].svalue/1000.0;
+        info("        Signal quality: %2.1f dB\n",quality);      
+        break; 
+      default: break;
     }
   }
 
@@ -2201,6 +2209,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                           info("%d (CH%d): skipped (already scanned transponder)\n", freq_scale(f, 1e-3),channel);
                           continue;
                           }
+//if (f==506000000) test.frequency = 522000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
                        info("%d (CH%d): ", freq_scale(f, 1e-3),channel);
                        break;
                     case SCAN_CABLE:
@@ -2309,6 +2318,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  //if (__tune_to_transponder(frontend_fd, ptest,0) < 0)
                  //   continue;
+if (f==506000000) test.frequency = 506000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
                  t = alloc_transponder(f, test.delsys, test.polarization);
                  t->type = ptest->type;
                  t->source = 0;
@@ -2327,8 +2337,13 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                        if (initial_table_lookup(frontend_fd)) {
                          print_transponder(buffer,current_tp);
-                         if (flags.dedup) {
+                         if (flags.dedup==2) {
+                            info("        %s : scanning for services\n",buffer);
+                            scan_tp();
                             print_signal_info(frontend_fd);
+                            AddItem(output_transponders, current_tp);
+                         }
+                         else if (flags.dedup==1) {
                             int isDuplicate = is_already_found_transponder(current_tp);
                             if (isDuplicate) {
                               info("        skipping.\n");                            
@@ -2394,7 +2409,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhm:o:q:s:t:vA:C:EFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhm:o:q:s:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2434,6 +2449,9 @@ int main(int argc, char ** argv) {
              break;
      case 'd': // avoiding duplicate multiplexes in output
              flags.dedup = 1;
+             break;
+     case 'D': // avoiding duplicate multiplexes in output
+             flags.dedup = 2;
              break;
      case 'E': //exclude encrypted channels
              flags.ca_select = 0;
