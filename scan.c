@@ -2018,6 +2018,43 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
   return 0;
 }
 
+void print_signal_info(int frontend_fd) {
+  struct dtv_property p[] = {{.cmd = DTV_STAT_SIGNAL_STRENGTH }, {.cmd = DTV_STAT_CNR }};
+  struct dtv_properties cmdseq = {.num = 2, .props = p};
+
+  /* expected to fail with old drivers,
+   * therefore no warning to user. 20090324 -wk
+   */
+  if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
+     return;
+
+  }
+
+  double sigstr = 0.0;
+  if (p[0].u.st.len>0) {
+    if (p[1].u.st.stat[0].scale==FE_SCALE_RELATIVE) {
+      sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
+      info("        Signal strength: %2.1f/100\n",sigstr);       
+    } else if (p[0].u.st.stat[0].scale==FE_SCALE_DECIBEL) {
+      sigstr = p[0].u.st.stat[0].svalue/1000.0;
+      info("        Signal strength: %2.1f dB\n",sigstr);       
+    }
+  }
+
+
+  double quality = 0.0;
+  if (p[1].u.st.len>0) {
+    if (p[1].u.st.stat[0].scale==FE_SCALE_RELATIVE) {
+      quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
+      info("        Signal quality: %2.1f/100\n",quality);       
+    } else if (p[1].u.st.stat[0].scale==FE_SCALE_DECIBEL) {
+      quality = p[1].u.st.stat[0].svalue/1000.0;
+      info("        Signal quality: %2.1f dBm\n",quality);       
+    }
+  }
+
+}
+
 /* identify wether tn is already in list of new transponders */
 static int is_already_scanned_transponder(struct transponder * tn) {
   struct transponder * t;
@@ -2291,6 +2328,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                        if (initial_table_lookup(frontend_fd)) {
                          print_transponder(buffer,current_tp);
                          if (flags.dedup) {
+                            print_signal_info(frontend_fd);
                             int isDuplicate = is_already_found_transponder(current_tp);
                             if (isDuplicate) {
                               info("        skipping.\n");                            
