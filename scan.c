@@ -2018,6 +2018,51 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
   return 0;
 }
 
+void print_signal_ber(int frontend_fd) {
+  struct dtv_property p[] = {{.cmd = DTV_STAT_POST_ERROR_BIT_COUNT}, {.cmd = DTV_STAT_POST_TOTAL_BIT_COUNT}};
+  struct dtv_properties cmdseq = {.num = 2, .props = p};
+
+  /* expected to fail with old drivers,
+   * therefore no warning to user. 20090324 -wk
+   */
+  if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
+     return;
+
+  }
+  uint64_t start_bits = 0;
+  uint64_t start_error_bits = 0;
+  int avail = 0;
+  if ((p[0].u.st.len>0) && (p[1].u.st.len>0)) {
+    switch (p[1].u.st.stat[0].scale) {
+      case FE_SCALE_COUNTER:
+        start_error_bits = p[0].u.st.stat[0].uvalue;
+        start_bits = p[1].u.st.stat[0].uvalue;
+        avail=1;
+        break;       
+      default: break;       
+    }
+  }
+  
+
+  if (avail) {
+    // measure for 6 seconds
+    usleep(8000000);
+    if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
+     return;
+
+    }
+    uint64_t bits = p[1].u.st.stat[0].uvalue-start_bits;
+    uint64_t error_bits = p[0].u.st.stat[0].uvalue - start_error_bits;
+    info("        Errors: %zu\n",error_bits);
+    info("        Bits: %zu\n",bits);
+
+    double rate = ((double)(error_bits)) / bits;
+    info ("        BER: %1.1e\n",rate);
+
+  }
+
+}
+
 void print_signal_info(int frontend_fd) {
   struct dtv_property p[] = {{.cmd = DTV_STAT_SIGNAL_STRENGTH }, {.cmd = DTV_STAT_CNR }};
   struct dtv_properties cmdseq = {.num = 2, .props = p};
@@ -2032,7 +2077,7 @@ void print_signal_info(int frontend_fd) {
 
   double sigstr = 0.0;
   if (p[0].u.st.len>0) {
-    switch (p[1].u.st.stat[0].scale) {
+    switch (p[0].u.st.stat[0].scale) {
       case FE_SCALE_RELATIVE:
         sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
         info("        Signal strength: %2.1f/100\n",sigstr);
@@ -2044,7 +2089,6 @@ void print_signal_info(int frontend_fd) {
       default: break;       
     }
   }
-
 
   double quality = 0.0;
   if (p[1].u.st.len>0) {
@@ -2060,6 +2104,7 @@ void print_signal_info(int frontend_fd) {
       default: break;
     }
   }
+  print_signal_ber(frontend_fd);
 
 }
 
@@ -2318,7 +2363,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  //if (__tune_to_transponder(frontend_fd, ptest,0) < 0)
                  //   continue;
-if (f==506000000) test.frequency = 506000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
+//if (f==506000000) test.frequency = 506000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
                  t = alloc_transponder(f, test.delsys, test.polarization);
                  t->type = ptest->type;
                  t->source = 0;
