@@ -2012,8 +2012,12 @@ static void dump_lists(int adapter, int frontend) {
 
   if (verbosity > 4) bubbleSort(scanned_transponders, cmp_freq_pol);
 
+  int duplicates_in_list = 0;
+
   for(t = scanned_transponders->first; t; t = t->next) {
-     if (flags.dedup == 1 && find_duplicate_transponders(NULL, t, t))
+     int tp_has_dup = find_duplicate_transponders(NULL, t, t);
+     if (tp_has_dup) duplicates_in_list = 1;
+     if (flags.dedup == 1 && tp_has_dup)
         continue;
 
      for(s = (t->services)->first; s; s = s->next) {
@@ -2025,12 +2029,29 @@ static void dump_lists(int adapter, int frontend) {
            continue;  /* no data/other services */
         if (s->scrambled && (flags.ca_select == 0))
            continue; /* FTA only */
-        if (flags.dedup == 1 && find_duplicate_services(NULL, t, t, s))
+        int service_has_dup = find_duplicate_services(NULL, t, t, s);
+        if (service_has_dup) duplicates_in_list = 1;
+        if (flags.dedup == 1 && service_has_dup)
            continue; /* Duplicate service to be ignored */
         n++;
         }
      }
 
+  if (duplicates_in_list) {
+     switch (flags.dedup) {
+        case 2:
+          info("NOTE: There are duplicate services in your channel list.");
+          if (output_format==OUTPUT_VDR) info(" They will be marked.\n");
+          else info("\n");
+          break;
+        case 1:
+          info("NOTE: Duplicate services have been removed from your channel list.\n");
+          break;
+        default:
+          info("NOTE: There are duplicate services in your channel list.\n");
+          break;
+     }
+  }
   info("(time: %s) dumping lists (%d services)\n..\n", run_time(), n);
 
   switch(output_format) {
