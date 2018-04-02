@@ -146,7 +146,6 @@ enum __output_format {
 static enum __output_format output_format = OUTPUT_VDR;
 
 cList _scanned_transponders, * scanned_transponders = &_scanned_transponders;
-cList _output_transponders, * output_transponders = &_output_transponders;
 cList _new_transponders, * new_transponders = &_new_transponders;
 static struct transponder * current_tp;
 
@@ -360,97 +359,6 @@ void bubbleSort(pList list, cmp_func compare) {
    }
 }
 
-static void dump_lists(int adapter, int frontend) {
-  struct transponder * t;
-  struct service * s;
-  int n = 0, i, index = 0;
-  char sn[20];
-  FILE * dest = flags.emulate ? stderr:stdout; // no fprintf output to stdout /w emul. why? :(
-
-  if (verbosity > 4) bubbleSort(output_transponders, cmp_freq_pol);
-
-  for(t = output_transponders->first; t; t = t->next) {
-     for(s = (t->services)->first; s; s = s->next) {
-        if (s->video_pid && !(serv_select & 1))
-           continue;  /* no TV services */
-        if (!s->video_pid &&  (s->audio_num || s->ac3_num) && !(serv_select & 2))
-           continue;  /* no radio services */
-        if (!s->video_pid && !(s->audio_num || s->ac3_num) && !(serv_select & 4))
-           continue;  /* no data/other services */
-        if (s->scrambled && (flags.ca_select == 0))
-           continue; /* FTA only */
-        n++;
-        }
-     }
-
-  info("(time: %s) dumping lists (%d services)\n..\n", run_time(), n);
-
-  switch(output_format) {
-     case OUTPUT_VLC_M3U:
-        vlc_xspf_prolog(dest, adapter, frontend, &flags);
-        break;
-     case OUTPUT_XML:
-        xml_dump(dest, output_transponders);
-        break;
-     default:;
-     }
-
-  for(t = output_transponders->first; t; t = t->next) {
-     if (output_format == OUTPUT_DVBSCAN_TUNING_DATA && ((t->source >> 8) == 64)) {
-        dvbscan_dump_tuningdata(dest, t, index++, &flags);
-        continue;
-        }                        
-     for(s = (t->services)->first; s; s = s->next) {
-        if (!s->service_name) { // no service name in SDT                                
-           snprintf(sn, sizeof(sn), "service_id %d", s->service_id);
-           s->service_name = strdup(sn);
-           }
-        /* ':' is field separator in vdr service lists */
-        for(i = 0; s->service_name[i]; i++) {
-           if (s->service_name[i] == ':')
-              s->service_name[i] = ' ';
-           }
-        for(i = 0; s->provider_name && s->provider_name[i]; i++) {
-           if (s->provider_name[i] == ':')
-              s->provider_name[i] = ' ';
-           }
-        if (s->video_pid && !(serv_select & 1))                                         // vpid, this is tv
-           continue; /* no TV services */
-        if (!s->video_pid &&  (s->audio_num || s->ac3_num) && !(serv_select & 2))       // no vpid, but apid or ac3pid, this is radio
-           continue; /* no radio services */
-        if (!s->video_pid && !(s->audio_num || s->ac3_num) && !(serv_select & 4))       // no vpid, no apid, no ac3pid, this is service/other
-           continue; /* no data/other services */
-        if (s->scrambled && (flags.ca_select == 0))                                     // caid, this is scrambled tv or radio
-           continue; /* FTA only */
-        switch(output_format) {
-           case OUTPUT_VDR:
-              vdr_dump_service_parameter_set(dest, s, t, &flags);
-              break;
-           case OUTPUT_XINE:
-              xine_dump_service_parameter_set(dest, s, t, &flags);
-              break;
-           case OUTPUT_MPLAYER:
-              mplayer_dump_service_parameter_set(dest, s, t, &flags);
-              break;
-           case OUTPUT_VLC_M3U:
-              vlc_dump_service_parameter_set_as_xspf(dest, s, t, &flags);
-              break;
-           default:
-              break;
-           }
-     }
-  }
-  switch(output_format) {
-     case OUTPUT_VLC_M3U:
-        vlc_xspf_epilog(dest);
-        break;
-     default:;
-     }
-  fflush(stderr);
-  fflush(stdout);
-  info("Done, scan time: %s\n", run_time());
-}
-
 int get_api_version(int frontend_fd, struct t2scan_flags * flags) {
   struct dtv_property p[] = {{.cmd = DTV_API_VERSION }};
   struct dtv_properties cmdseq = {.num = 1, .props = p};
@@ -502,6 +410,8 @@ static const char * usage = "\n"
   "                 xml       = w_scan XML tuning data\n"
   "       -E, --no-encrypted\n"
   "               exclude encrypted services from output\n"
+  "       -d, --mark-duplicates\n"
+  "               mark duplicates in output (VDR output only)\n"
   "       -s <list of services>, --output-services  <list of services>\n"
   "               specify types of services to be included in output\n"
   "                 t = include TV channels in output [default: on]\n"
@@ -528,8 +438,10 @@ static const char * ext_opts = "%s expert help\n"
   "       -Y <country>, --country <country>\n"  
   "               use settings for a specific country:\n"
   "                 DE, GB, US, AU, .., ? for list [default: auto-detect]\n"
-  "       -d\n"
-  "               don't scan duplicate transponders (experimental)\n"
+  "       -D, --no-duplicates\n"
+  "               exclude duplicate services from output\n"
+  "               NOTE: If a service is found multiple times, this will\n"
+  "                     only consider the instance found last!\n"
   ".................General.................\n"
   "       -I <charset>, --charset <charset>\n"
   "               convert to charset, i.e. 'UTF-8', 'ISO-8859-15'\n"
@@ -617,6 +529,8 @@ static struct option long_options[] = {
     {"channel-min"       , required_argument, NULL, 'c'},
     {"channel-max"       , required_argument, NULL, 'C'},
     {"no-encrypted"      , no_argument      , NULL, 'E'},
+    {"no-duplicates"     , no_argument      , NULL, 'D'},
+    {"mark-duplicates"   , no_argument      , NULL, 'd'},
     //---
     {"output-format"     , required_argument, NULL, 'o'},
     {"help"              , no_argument      , NULL, 'h'},
@@ -644,12 +558,6 @@ static int n_running;
 #define MAX_RUNNING 27
 static struct pollfd poll_fds[MAX_RUNNING];
 static struct section_buf * poll_section_bufs[MAX_RUNNING];
-
-static void handle_sigint(int sig) {
-  error("interrupted by SIGINT, dumping partial result...\n");
-  dump_lists(-1, -1);
-  exit(2);
-}
 
 void bad_usage(char * pname) {
   fprintf(stderr, usage, pname);
@@ -2018,96 +1926,6 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
   return 0;
 }
 
-void print_signal_ber(int frontend_fd) {
-  struct dtv_property p[] = {{.cmd = DTV_STAT_POST_ERROR_BIT_COUNT}, {.cmd = DTV_STAT_POST_TOTAL_BIT_COUNT}};
-  struct dtv_properties cmdseq = {.num = 2, .props = p};
-
-  /* expected to fail with old drivers,
-   * therefore no warning to user. 20090324 -wk
-   */
-  if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
-     return;
-
-  }
-  uint64_t start_bits = 0;
-  uint64_t start_error_bits = 0;
-  int avail = 0;
-  if ((p[0].u.st.len>0) && (p[1].u.st.len>0)) {
-    switch (p[1].u.st.stat[0].scale) {
-      case FE_SCALE_COUNTER:
-        start_error_bits = p[0].u.st.stat[0].uvalue;
-        start_bits = p[1].u.st.stat[0].uvalue;
-        avail=1;
-        break;       
-      default: break;       
-    }
-  }
-  
-
-  if (avail) {
-    // measure for 6 seconds
-    usleep(8000000);
-    if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
-     return;
-
-    }
-    uint64_t bits = p[1].u.st.stat[0].uvalue-start_bits;
-    uint64_t error_bits = p[0].u.st.stat[0].uvalue - start_error_bits;
-    info("        Errors: %zu\n",error_bits);
-    info("        Bits: %zu\n",bits);
-
-    double rate = ((double)(error_bits)) / bits;
-    info ("        BER: %1.1e\n",rate);
-
-  }
-
-}
-
-void print_signal_info(int frontend_fd) {
-  struct dtv_property p[] = {{.cmd = DTV_STAT_SIGNAL_STRENGTH }, {.cmd = DTV_STAT_CNR }};
-  struct dtv_properties cmdseq = {.num = 2, .props = p};
-
-  /* expected to fail with old drivers,
-   * therefore no warning to user. 20090324 -wk
-   */
-  if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
-     return;
-
-  }
-
-  double sigstr = 0.0;
-  if (p[0].u.st.len>0) {
-    switch (p[0].u.st.stat[0].scale) {
-      case FE_SCALE_RELATIVE:
-        sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
-        info("        Signal strength: %2.1f/100\n",sigstr);
-        break;       
-      case FE_SCALE_DECIBEL:
-        sigstr = p[0].u.st.stat[0].svalue/1000.0;
-        info("        Signal strength: %2.1f dBm\n",sigstr);
-        break;
-      default: break;       
-    }
-  }
-
-  double quality = 0.0;
-  if (p[1].u.st.len>0) {
-    switch (p[1].u.st.stat[0].scale) {
-      case FE_SCALE_RELATIVE:
-        quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
-        info("        Signal quality: %2.1f/100\n",quality);
-        break;
-      case FE_SCALE_DECIBEL:
-        quality = p[1].u.st.stat[0].svalue/1000.0;
-        info("        Signal quality: %2.1f dB\n",quality);      
-        break; 
-      default: break;
-    }
-  }
-  print_signal_ber(frontend_fd);
-
-}
-
 /* identify wether tn is already in list of new transponders */
 static int is_already_scanned_transponder(struct transponder * tn) {
   struct transponder * t;
@@ -2133,13 +1951,13 @@ static int is_already_scanned_transponder(struct transponder * tn) {
   return 0;
 }
 
-/* identify whether tn is a duplicate of an already found transponder */
-static int is_already_found_transponder(struct transponder * tn) {
+static int find_duplicate_transponders(FILE * dest, struct transponder * tn, struct transponder * ts) {
   struct transponder * t;
-  for(t = output_transponders->first; t; t = t->next) {
-      if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) 
+  int is_dup = 0;
+
+  for(t = ts; t; t = t->next) {
+    if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) 
          continue; // ensure we do not compare the transponder with itself
-      debug("  (%d %d, %d %d, %d, %d)\n", t->original_network_id, tn->original_network_id, t->network_id, tn->network_id, t->transport_stream_id, tn->transport_stream_id);
       if (t->original_network_id != tn->original_network_id)
          continue;
       if (t->network_id != tn->network_id)
@@ -2147,13 +1965,155 @@ static int is_already_found_transponder(struct transponder * tn) {
       if (t->transport_stream_id != tn->transport_stream_id)
          continue;
       // same ONID, NID, TID = same transponder
-      info("        This is a duplicate of what was found on %d.\n",freq_scale(t->frequency, 1e-3));
-      return 1;
+      if (dest) 
+         fprintf(dest, ":# DUPLICATE of mux (%d, %d, %d) on %d found on %d\n",
+           tn->original_network_id, 
+           tn->network_id, 
+           tn->transport_stream_id, 
+           freq_scale(tn->frequency, 1e-3),
+           freq_scale(t->frequency, 1e-3));
+      is_dup = 1;
   }
-
-  return 0;
+  return is_dup;
 }
 
+static int find_duplicate_services(FILE * dest, struct transponder * tn, struct transponder * ts, struct service * s) {
+  struct transponder * t;
+  int s_original_network_id = tn->original_network_id;
+  int s_network_id = tn->network_id;
+  int s_service_id = s->service_id;
+  int is_dup = 0;
+  char * s_name = "";
+
+  if (s->service_name) s_name = s->service_name;
+
+  for(t = ts; t; t = t->next) {
+    if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) 
+         continue; // ensure we do not compare the transponder with itself
+      for(s = (t->services)->first; s; s = s->next) {
+         if (s->service_id==s_service_id && t->original_network_id == s_original_network_id && t-> network_id == s_network_id) {
+           if (dest) fprintf(dest, ":# DUPLICATE of service '%s' in network (%d, %d) found on %d\n",s_name, s_original_network_id, s_network_id, freq_scale(t->frequency, 1e-3));  
+           is_dup = 1;
+         }
+      }
+  }
+  return is_dup;
+}
+
+
+
+
+static void dump_lists(int adapter, int frontend) {
+  struct transponder * t;
+  struct service * s;
+  int n = 0, i, index = 0;
+  char sn[20];
+  FILE * dest = flags.emulate ? stderr:stdout; // no fprintf output to stdout /w emul. why? :(
+
+  if (verbosity > 4) bubbleSort(scanned_transponders, cmp_freq_pol);
+
+  for(t = scanned_transponders->first; t; t = t->next) {
+     if (flags.dedup == 1 && find_duplicate_transponders(NULL, t, t))
+        continue;
+
+     for(s = (t->services)->first; s; s = s->next) {
+        if (s->video_pid && !(serv_select & 1))
+           continue;  /* no TV services */
+        if (!s->video_pid &&  (s->audio_num || s->ac3_num) && !(serv_select & 2))
+           continue;  /* no radio services */
+        if (!s->video_pid && !(s->audio_num || s->ac3_num) && !(serv_select & 4))
+           continue;  /* no data/other services */
+        if (s->scrambled && (flags.ca_select == 0))
+           continue; /* FTA only */
+        if (flags.dedup == 1 && find_duplicate_services(NULL, t, t, s))
+           continue; /* Duplicate service to be ignored */
+        n++;
+        }
+     }
+
+  info("(time: %s) dumping lists (%d services)\n..\n", run_time(), n);
+
+  switch(output_format) {
+     case OUTPUT_VLC_M3U:
+        vlc_xspf_prolog(dest, adapter, frontend, &flags);
+        break;
+     case OUTPUT_XML:
+        xml_dump(dest, scanned_transponders);
+        break;
+     default:;
+     }
+
+  for(t = scanned_transponders->first; t; t = t->next) {
+     if (flags.dedup ==1 && find_duplicate_transponders(NULL, t, t))
+        continue;
+     int mux_duplicate = 0;
+     if (flags.dedup==2 && output_format==OUTPUT_VDR) {
+       mux_duplicate = find_duplicate_transponders(dest,t, scanned_transponders->first); 
+     }
+     if (output_format == OUTPUT_DVBSCAN_TUNING_DATA && ((t->source >> 8) == 64)) {
+        dvbscan_dump_tuningdata(dest, t, index++, &flags);
+        continue;
+        }
+    
+     for(s = (t->services)->first; s; s = s->next) {
+        if (flags.dedup ==1 && find_duplicate_services(NULL, t, t, s))
+           continue;
+        if (!s->service_name) { // no service name in SDT                                
+           snprintf(sn, sizeof(sn), "service_id %d", s->service_id);
+           s->service_name = strdup(sn);
+           }
+        /* ':' is field separator in vdr service lists */
+        for(i = 0; s->service_name[i]; i++) {
+           if (s->service_name[i] == ':')
+              s->service_name[i] = ' ';
+           }
+        for(i = 0; s->provider_name && s->provider_name[i]; i++) {
+           if (s->provider_name[i] == ':')
+              s->provider_name[i] = ' ';
+           }
+        if (s->video_pid && !(serv_select & 1))                                         // vpid, this is tv
+           continue; /* no TV services */
+        if (!s->video_pid &&  (s->audio_num || s->ac3_num) && !(serv_select & 2))       // no vpid, but apid or ac3pid, this is radio
+           continue; /* no radio services */
+        if (!s->video_pid && !(s->audio_num || s->ac3_num) && !(serv_select & 4))       // no vpid, no apid, no ac3pid, this is service/other
+           continue; /* no data/other services */
+        if (s->scrambled && (flags.ca_select == 0))                                     // caid, this is scrambled tv or radio
+           continue; /* FTA only */
+        switch(output_format) {
+           case OUTPUT_VDR:
+              if (flags.dedup==2 && mux_duplicate==0) find_duplicate_services(dest, t, scanned_transponders->first, s);
+              vdr_dump_service_parameter_set(dest, s, t, &flags);
+              break;
+           case OUTPUT_XINE:
+              xine_dump_service_parameter_set(dest, s, t, &flags);
+              break;
+           case OUTPUT_MPLAYER:
+              mplayer_dump_service_parameter_set(dest, s, t, &flags);
+              break;
+           case OUTPUT_VLC_M3U:
+              vlc_dump_service_parameter_set_as_xspf(dest, s, t, &flags);
+              break;
+           default:
+              break;
+           }
+     }
+  }
+  switch(output_format) {
+     case OUTPUT_VLC_M3U:
+        vlc_xspf_epilog(dest);
+        break;
+     default:;
+     }
+  fflush(stderr);
+  fflush(stdout);
+  info("Done, scan time: %s\n", run_time());
+}
+
+static void handle_sigint(int sig) {
+  error("interrupted by SIGINT, dumping partial result...\n");
+  dump_lists(-1, -1);
+  exit(2);
+}
 
 static void network_scan(int frontend_fd, int tuning_data) {
 
@@ -2254,7 +2214,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                           info("%d (CH%d): skipped (already scanned transponder)\n", freq_scale(f, 1e-3),channel);
                           continue;
                           }
-//if (f==506000000) test.frequency = 522000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
+//if (f==506000000) test.frequency = 522000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
                        info("%d (CH%d): ", freq_scale(f, 1e-3),channel);
                        break;
                     case SCAN_CABLE:
@@ -2363,7 +2323,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  //if (__tune_to_transponder(frontend_fd, ptest,0) < 0)
                  //   continue;
-//if (f==506000000) test.frequency = 506000000; // TEST FOR Dups! Do NOT!!! check-in to GIT!!
+//if (f==506000000) test.frequency = 506000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
                  t = alloc_transponder(f, test.delsys, test.polarization);
                  t->type = ptest->type;
                  t->source = 0;
@@ -2382,26 +2342,8 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                        if (initial_table_lookup(frontend_fd)) {
                          print_transponder(buffer,current_tp);
-                         if (flags.dedup==2) {
-                            info("        %s : scanning for services\n",buffer);
-                            scan_tp();
-                            print_signal_info(frontend_fd);
-                            AddItem(output_transponders, current_tp);
-                         }
-                         else if (flags.dedup==1) {
-                            int isDuplicate = is_already_found_transponder(current_tp);
-                            if (isDuplicate) {
-                              info("        skipping.\n");                            
-                            } else {
-                               info("        %s : scanning for services\n",buffer);
-                               scan_tp();
-                               AddItem(output_transponders, current_tp);
-                            }
-                         } else {
-                            info("        %s : scanning for services\n",buffer);
-                            scan_tp();
-                            AddItem(output_transponders, current_tp);
-                         } 
+                         info("        %s : scanning for services\n",buffer);
+                         scan_tp(); 
                          AddItem(scanned_transponders, current_tp);
                        }
 
@@ -2444,7 +2386,6 @@ int main(int argc, char ** argv) {
   NewList(running_filters, "running_filters");
   NewList(waiting_filters, "waiting_filters");
   NewList(scanned_transponders, "scanned_transponders");
-  NewList(output_transponders, "output_transponders");
   NewList(new_transponders, "new_transponders");
 
   #define cleanup() cl(country); cl(satellite); cl(initdata); cl(positionfile); cl(codepage);
@@ -2492,10 +2433,10 @@ int main(int argc, char ** argv) {
              flags.channel_max = strtoul(optarg, NULL, 0);
              if ((flags.channel_max > 133)) bad_usage(argv[0]);
              break;
-     case 'd': // avoiding duplicate multiplexes in output
+     case 'D': // exclude duplicate services in output
              flags.dedup = 1;
              break;
-     case 'D': // avoiding duplicate multiplexes in output
+     case 'd': // mark duplicate services in output (VDR output only)
              flags.dedup = 2;
              break;
      case 'E': //exclude encrypted channels

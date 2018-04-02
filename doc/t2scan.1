@@ -52,6 +52,9 @@ xml       = w_scan XML tuning data.
 .B \-E
 Exclude encrypted channels from output
 .TP
+.B \-d
+Mark duplicates in output (VDR output only)
+.TP
 .B \-s TYPES
 specify service types to be included in output
 .br
@@ -103,8 +106,12 @@ FR = France
 .br
 Use "-Y?" for a list of all known identifiers. Default is auto-detection from system settings.
 .TP
-.B \-d
-don't scan duplicate transponders (experimental)
+.B \-D
+Exclude duplicate services from output
+.br
+NOTE: If a service is found multiple times, this will 
+.br
+      only consider the instance found last!
 .TP 
 .B \-I CHARSET
 specifies the output charset, i.e. "UTF-8", "ISO-8859-15"
