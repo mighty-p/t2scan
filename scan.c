@@ -1012,8 +1012,6 @@ em_static void parse_pmt(const unsigned char * buf, uint16_t section_length, uin
            break;
         case iso_iec_13818_7_audio_w_ADTS_transp:
            moreverbose("  ADTS Audio Stream (usually AAC) : PID %d (stream type 0x%x)\n", elementary_pid, buf[0]);
-           if ((output_format == OUTPUT_VDR) && (flags.vdr_version != 2)) // CHECK!
-              break; /* not supported by VDR-1.2..1.7.?? */
            if (s->audio_num < AUDIO_CHAN_MAX) {
               s->audio_pid[s->audio_num] = elementary_pid;
               s->audio_stream_type[s->audio_num] = buf[0];
@@ -1028,8 +1026,6 @@ em_static void parse_pmt(const unsigned char * buf, uint16_t section_length, uin
            break;
         case iso_iec_14496_3_audio_w_LATM_transp:
            moreverbose("  ISO/IEC 14496-3 Audio with LATM transport syntax as def. in ISO/IEC 14496-3/AMD1 : PID %d (stream type 0x%x)\n", elementary_pid, buf[0]);
-           if ((output_format == OUTPUT_VDR) && (flags.vdr_version != 2)) // CHECK!
-              break; /* not supported by VDR-1.2..1.7.?? */
            if (s->audio_num < AUDIO_CHAN_MAX) {
               s->audio_pid[s->audio_num] = elementary_pid;
               s->audio_stream_type[s->audio_num] = buf[0];
