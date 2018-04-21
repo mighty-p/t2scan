@@ -1,5 +1,10 @@
 ChangeLog:
 ----------
+2018-04-21
+ - Changed version string to 20180421 for the 0.3 release
+ - fixed problem that some audio pids were not included in vdr output
+ - option "-d" to mark duplicate multiplexed and services 
+   and "-D" to remove such duplicates automatically  
 2018-03-30
  - refactor the options:
     - "-c" and "-C" (for *c*hannel) to determine lowest and highest channel
