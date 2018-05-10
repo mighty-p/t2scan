@@ -22,6 +22,9 @@ specify lowest channel to scan,
 .TP 
 .B \-C N
 specify highest channel to scan,
+.TP
+.B \-l LIST
+scan only channels in the given comma-separated list
 .TP 
 .B \-t TYPE
 specify DVB-T type to scan,
@@ -173,6 +176,9 @@ scan aerial (DVB-T2 only):
 .TP
 scan aerial from channel 21 to channel 32:
 .B t2scan -c 21 -C 32
+.TP
+scan aerial, but only channels 21, 24, and 27:
+.B t2scan -l 21,24,27
 .TP
 use output format vlc:
 .B t2scan [ OTHER OPTIONS ] -o vlc

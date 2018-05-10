@@ -119,6 +119,8 @@ static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T 
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                
 static unsigned int serv_select = 3;            // 20080106: radio and tv as default (no service/other). 20090227: flag type vars shouldnt be signed. 
+static int user_channellist[200];               // for user channel list given by parameter -l
+static bool use_user_channellist = false;       // for user channel list given by parameter -l
 
 struct timespec start_time = { 0, 0 };
 
@@ -393,6 +395,8 @@ static const char * usage = "\n"
   "               lowest channel to scan\n"
   "       -C <N>, --channel-max <N>\n"
   "               highest channel to scan\n"
+  "       -l <list of channels>\n"
+  "               scan only channels in the given comma-separated list\n"
   "       -t <N>, --dvbt_type <N>\n"
   "               specify DVB-T type to scan\n"
   "                 0 = DVB-T and DVB-T2 [default]\n"
@@ -426,7 +430,7 @@ static const char * usage = "\n"
 
 static const char * ext_opts = "%s expert help\n"
   ".................Filter Options..........\n"
-  "       -L <channel-list>, --channel-list <channel-list>\n"
+  "       -L <N>, --channel-list <N>\n"
   "               one of the following generic channel lists for Europe:\n"
   "                  0: Europe, UHF channels below 790 MHz [default]\n"
   "                  1: Europe, UHF channels below 700 MHz\n"
@@ -2132,6 +2136,14 @@ static void handle_sigint(int sig) {
   exit(2);
 }
 
+static bool channel_in_userlist(int channel) {
+  int i;
+  int channellist_length = sizeof(user_channellist) / sizeof(int);
+  for (i=0;i<channellist_length;i++)
+    if (user_channellist[i]==channel) return true;
+  return false;
+}
+
 static void network_scan(int frontend_fd, int tuning_data) {
 
   uint32_t f = 0, channel, mod_parm, sr_parm, offs, this_sr=0;
@@ -2207,6 +2219,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                           info("Scanning DVB-%s...\n", delsys == SYS_DVBT?"T":"T2");
                           last_delsys = delsys_parm;
                           }
+                       if (use_user_channellist && (!channel_in_userlist(channel))) continue;
                        f = chan_to_freq(channel, this_channellist);
                        if (! f) continue; //skip unused channels
                        if (freq_offset(channel, this_channellist, offs) == -1)
@@ -2398,6 +2411,7 @@ int main(int argc, char ** argv) {
   char * satellite = NULL;
   char * initdata = NULL;
   char * positionfile = NULL;
+  char * user_channel = NULL;
 
   // initialize lists.
   NewList(running_filters, "running_filters");
@@ -2412,7 +2426,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhm:o:q:s:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:q:s:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2474,6 +2488,17 @@ int main(int argc, char ** argv) {
              break;
      case 'I': // iconv to charset (-C in w_scan)
              codepage = strdup(optarg);
+             break;
+     case 'l': // comma-separated channel list
+             use_user_channellist = true;
+             i = 0;
+             user_channel = strtok(optarg,",");
+             while (user_channel != NULL) {
+               user_channellist[i] = atoi(user_channel);
+               user_channel = strtok(NULL, "-");
+               i++;
+             }
+             i=0;
              break;
      case 'L': // channel list setting, default channel list for country is automatically set
              override_channellist = strtoul(optarg, NULL, 0);
