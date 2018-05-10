@@ -2495,7 +2495,7 @@ int main(int argc, char ** argv) {
              user_channel = strtok(optarg,",");
              while (user_channel != NULL) {
                user_channellist[i] = atoi(user_channel);
-               user_channel = strtok(NULL, "-");
+               user_channel = strtok(NULL, ",");
                i++;
              }
              i=0;
