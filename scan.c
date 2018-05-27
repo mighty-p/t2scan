@@ -97,6 +97,7 @@ struct t2scan_flags flags = {
   1,                // tuning speed {1 = fast, 2 = medium, 3 = slow}
   0,                // filter timeout {0 = default, 1 = long} 
   0,                // default: no deduplicating // NOTE: I may change this after next release
+  0,                // default: don't give out information about reception
   1,                // dump_provider, dump also provider name
   21,               // VDR version for output; 2.1+ //changed 20180330
   0,                // 0 = qam auto, 1 = search qams
@@ -1858,6 +1859,51 @@ static int read_filters(void) {
 }
 
 
+void print_signal_info(int frontend_fd) {
+  struct dtv_property p[] = {{.cmd = DTV_STAT_SIGNAL_STRENGTH }, {.cmd = DTV_STAT_CNR }};
+  struct dtv_properties cmdseq = {.num = 2, .props = p};
+
+  /* expected to fail with old drivers, therefore no warning to user. */
+  if (ioctl(frontend_fd, FE_GET_PROPERTY, &cmdseq)) {
+     return;
+
+  }
+
+  double sigstr = 0.0;
+  if (p[0].u.st.len>0) {
+    switch (p[0].u.st.stat[0].scale) {
+      case FE_SCALE_RELATIVE:
+        sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
+        info("\tsignal strength = %2.1f/100\n",sigstr);
+        break;       
+      case FE_SCALE_DECIBEL:
+        sigstr = p[0].u.st.stat[0].svalue/1000.0;
+        info("\tsignal strength = %2.1f dBm\n",sigstr);
+        break;
+      default: break;       
+    }
+  }
+
+  double quality = 0.0;
+  if (p[1].u.st.len>0) {
+    switch (p[1].u.st.stat[0].scale) {
+      case FE_SCALE_RELATIVE:
+        quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
+        info("\tsignal quality = %2.1f/100\n",quality);
+        break;
+      case FE_SCALE_DECIBEL:
+        quality = p[1].u.st.stat[0].svalue/1000.0;
+        info("\tsignal quality = %2.1f dB\n",quality);      
+        break; 
+      default: break;
+    }
+  }
+
+}
+
+
+
+
 static void scan_tp(void) {
   struct section_buf s[4];
   int result = 0;
@@ -2374,6 +2420,8 @@ static void network_scan(int frontend_fd, int tuning_data) {
                          print_transponder(buffer,current_tp);
                          info("        %s : scanning for services\n",buffer);
                          scan_tp(); 
+                         if (flags.reception_info==1)
+                            print_signal_info(frontend_fd);
                          AddItem(scanned_transponders, current_tp);
                        }
 
@@ -2426,7 +2474,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:q:s:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:q:rs:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2532,6 +2580,9 @@ int main(int argc, char ** argv) {
      case 'q': //quiet
              if (--verbosity < 0)
                 verbosity = 0;
+             break;
+     case 'r': // experimental switch for measuring the reception
+             flags.reception_info = 1;
              break;
      case 's': // included services in output
              TV_Services = (strstr(optarg, "t"))? 1: 0;

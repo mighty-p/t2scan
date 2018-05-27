@@ -53,6 +53,7 @@ struct t2scan_flags {
    uint8_t     tuning_timeout;
    uint8_t     filter_timeout;
    uint8_t     dedup;
+   uint8_t     reception_info;
    uint8_t     dump_provider;
    uint8_t     vdr_version;
    uint8_t     qam_no_auto;
