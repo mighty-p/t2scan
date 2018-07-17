@@ -200,6 +200,10 @@ struct transponder {
   /*----------------------------*/
   char * network_name;
   network_change_t network_change;
+  double signal_strength;
+  char * signal_strength_unit;
+  double signal_quality;
+  char * signal_quality_unit;
 } __attribute__((packed))  transponder_t, * p_transponder_t;
 
 /*******************************************************************************

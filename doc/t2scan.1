@@ -57,6 +57,8 @@ Exclude encrypted channels from output
 .TP
 .B \-d
 Mark duplicates in output (VDR output only)
+.br
+can be combined with -r to show reception values
 .TP
 .B \-s TYPES
 specify service types to be included in output
@@ -146,6 +148,11 @@ Tuning speed (lock timeout), increasing may help if device tunes slowly or has b
 2 = medium,
 .br
 3 = slowest
+.TP
+.B \-r
+show reception values (strength and quality) in the debug output.
+.br
+If -d is used (marking of duplicates), values will be shown there as well.
 .TP 
 .B \-P
 ATSC scan: do not use ATSC PSIP tables for scan (PAT and PMT only)

@@ -418,6 +418,7 @@ static const char * usage = "\n"
   "               exclude encrypted services from output\n"
   "       -d, --mark-duplicates\n"
   "               mark duplicates in output (VDR output only)\n"
+  "               can be combined with -r to show reception values.\n"
   "       -s <list of services>, --output-services  <list of services>\n"
   "               specify types of services to be included in output\n"
   "                 t = include TV channels in output [default: on]\n"
@@ -471,6 +472,10 @@ static const char * ext_opts = "%s expert help\n"
   "                 1 = fastest [default]\n"
   "                 2 = medium\n"
   "                 3 = slowest\n"
+  "       -r\n"
+  "               show reception values (strength and quality)\n"
+  "               in the debug output. If -d is used (marking of\n"
+  "               duplicates), values will be shown there as well.\n"
 //  ".................DVB-C...................\n"
 //  "       -i N, --inversion N\n"
 //  "               spectral inversion setting for cable TV\n"
@@ -1865,7 +1870,7 @@ static int read_filters(void) {
 }
 
 
-void print_signal_info(int frontend_fd) {
+void print_signal_info(int frontend_fd, struct transponder * t) {
   struct dtv_property p[] = {{.cmd = DTV_STAT_SIGNAL_STRENGTH }, {.cmd = DTV_STAT_CNR }};
   struct dtv_properties cmdseq = {.num = 2, .props = p};
 
@@ -1875,31 +1880,33 @@ void print_signal_info(int frontend_fd) {
 
   }
 
-  double sigstr = 0.0;
   if (p[0].u.st.len>0) {
     switch (p[0].u.st.stat[0].scale) {
       case FE_SCALE_RELATIVE:
-        sigstr = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
-        info("\tsignal strength = %2.1f/100\n",sigstr);
+        t->signal_strength = (p[0].u.st.stat[0].uvalue/65535.0)*100.0;
+        t->signal_strength_unit = "%";
+        info("\tsignal strength = %2.1f/100\n",t->signal_strength);
         break;       
       case FE_SCALE_DECIBEL:
-        sigstr = p[0].u.st.stat[0].svalue/1000.0;
-        info("\tsignal strength = %2.1f dBm\n",sigstr);
+        t->signal_strength = p[0].u.st.stat[0].svalue/1000.0;
+        t->signal_strength_unit = "dBm";
+        info("\tsignal strength = %2.1f dBm\n",t->signal_strength);
         break;
       default: break;       
     }
   }
 
-  double quality = 0.0;
   if (p[1].u.st.len>0) {
     switch (p[1].u.st.stat[0].scale) {
       case FE_SCALE_RELATIVE:
-        quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
-        info("\tsignal quality = %2.1f/100\n",quality);
+        t->signal_quality = (p[1].u.st.stat[0].uvalue/65535.0)*100.0;
+        t->signal_quality_unit = "%";
+        info("\tsignal quality = %2.1f/100\n",t->signal_quality);
         break;
       case FE_SCALE_DECIBEL:
-        quality = p[1].u.st.stat[0].svalue/1000.0;
-        info("\tsignal quality = %2.1f dB\n",quality);      
+        t->signal_quality = p[1].u.st.stat[0].svalue/1000.0;
+        t->signal_quality_unit = "dB";
+        info("\tsignal quality = %2.1f dB\n",t->signal_quality);      
         break; 
       default: break;
     }
@@ -2017,13 +2024,26 @@ static int find_duplicate_transponders(FILE * dest, struct transponder * tn, str
       if (t->transport_stream_id != tn->transport_stream_id)
          continue;
       // same ONID, NID, TID = same transponder
-      if (dest) 
-         fprintf(dest, ":# DUPLICATE of mux (%d, %d, %d) on %d found on %d\n",
-           tn->original_network_id, 
-           tn->network_id, 
-           tn->transport_stream_id, 
-           freq_scale(tn->frequency, 1e-3),
-           freq_scale(t->frequency, 1e-3));
+      if (dest) {
+         if (flags.reception_info>0) 
+           fprintf(dest, ":# DUPLICATE: mux (%d,%d,%d) on %d (strength=%2.1f %s, quality=%2.1f %s) also found on %d\n",
+             tn->original_network_id, 
+             tn->network_id, 
+             tn->transport_stream_id, 
+             freq_scale(tn->frequency, 1e-3),
+             tn->signal_strength,
+             tn->signal_strength_unit,
+             tn->signal_quality,
+             tn->signal_quality_unit,
+             freq_scale(t->frequency, 1e-3));
+         else
+           fprintf(dest, ":# DUPLICATE: mux (%d,%d,%d) on %d also found on %d\n",
+             tn->original_network_id, 
+             tn->network_id, 
+             tn->transport_stream_id, 
+             freq_scale(tn->frequency, 1e-3),
+             freq_scale(t->frequency, 1e-3));
+      }
       is_dup = 1;
   }
   return is_dup;
@@ -2044,7 +2064,15 @@ static int find_duplicate_services(FILE * dest, struct transponder * tn, struct 
          continue; // ensure we do not compare the transponder with itself
       for(s = (t->services)->first; s; s = s->next) {
          if (s->service_id==s_service_id && t->original_network_id == s_original_network_id && t-> network_id == s_network_id) {
-           if (dest) fprintf(dest, ":# DUPLICATE of service '%s' in network (%d, %d) found on %d\n",s_name, s_original_network_id, s_network_id, freq_scale(t->frequency, 1e-3));  
+           if (dest) {
+             if (flags.reception_info>0)
+               fprintf(dest, ":# DUPLICATE: service '%s' in network (%d, %d) on %d (strength=%2.1f %s, quality=%2.1f %s) also found on %d\n",
+                  s_name, s_original_network_id, s_network_id, freq_scale(tn->frequency, 1e-3), 
+                  tn->signal_strength, tn->signal_strength_unit, tn->signal_quality, tn->signal_quality_unit,freq_scale(t->frequency, 1e-3));
+             else
+               fprintf(dest, ":# DUPLICATE: service '%s' in network (%d, %d) on %d also found on %d\n",
+                  s_name, s_original_network_id, s_network_id, freq_scale(tn->frequency, 1e-3), freq_scale(t->frequency, 1e-3));
+           }  
            is_dup = 1;
          }
       }
@@ -2296,7 +2324,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                           info("%d (CH%d): skipped (already scanned transponder)\n", freq_scale(f, 1e-3),channel);
                           continue;
                           }
-//if (f==506000000) test.frequency = 522000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
+// if (f==506000000) test.frequency = 522000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
                        info("%d (CH%d): ", freq_scale(f, 1e-3),channel);
                        break;
                     case SCAN_CABLE:
@@ -2405,7 +2433,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  //if (__tune_to_transponder(frontend_fd, ptest,0) < 0)
                  //   continue;
-//if (f==506000000) test.frequency = 506000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
+// if (f==506000000) test.frequency = 506000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
                  t = alloc_transponder(f, test.delsys, test.polarization);
                  t->type = ptest->type;
                  t->source = 0;
@@ -2427,7 +2455,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                          info("        %s : scanning for services\n",buffer);
                          scan_tp(); 
                          if (flags.reception_info==1)
-                            print_signal_info(frontend_fd);
+                            print_signal_info(frontend_fd, current_tp);
                          AddItem(scanned_transponders, current_tp);
                        }
 
