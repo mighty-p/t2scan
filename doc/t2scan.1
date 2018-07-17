@@ -112,10 +112,13 @@ Use "-Y?" for a list of all known identifiers. Default is auto-detection from sy
 .B \-D
 Exclude duplicate services from output
 .br
-NOTE: If a service is found multiple times, this will 
+NOTE: If a service is found multiple times, this will only consider the instance found last!
+.TP
+.B \-p PLP_ID
+use the given PLP ID for scanning. Default: 0
 .br
-      only consider the instance found last!
-.TP 
+NOTE: For German DVB-T2, some additional "connect" channels are found with PLP ID 1.
+.TP
 .B \-I CHARSET
 specifies the output charset, i.e. "UTF-8", "ISO-8859-15"
 .br

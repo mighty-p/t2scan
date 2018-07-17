@@ -12,9 +12,10 @@ The differences are:
 
 t2scan vs w_scan:
 - Simplified scanning: The scan happens in one run and the NIT is only used to get the parameters of the *current* channel. This design decision was made since I noticed that often the NIT data referring to other channels is not reliable for DVB-T/T2, leading to channels not being found or having wrong IDs resulting in a non-working EPG in vdr. The approach should work with most current DVB-T/T2 cards since they can autodetect most parameters of a transponder when tuning. For DVB-S, this approach would result in many channels not being found, therefore I removed DVB-S (and -C) support.
-- Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-s".
+- Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-S".
 - Added a parameter to determine the lowest channel to scan ("-c") and the highest channel to scan ("-C"). This makes the scan much faster if the user knows which channels are used in the user's region.
 - Only DVB-T/T2 (ATSC available, but untested), support for DVB-C and DVB-S/S2 has been removed.
+- Ability to scan other PLP IDs than only PLP ID 0 ("-p") for DVB-T2. This allows to find the so-called "connect" channels in Germany.
 - Removed several options, trying to keep this tool very simple.
 
 w_scan vs scan:
@@ -79,6 +80,8 @@ To scan only for DVB-T2 channels: `t2scan -t2`
 To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
 
 To scan only channels 21 to 49: `t2scan -c21 -C49`
+
+To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
 
 To exclude encrypted services from output: `t2scan -E`
 

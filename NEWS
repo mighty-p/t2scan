@@ -1,5 +1,8 @@
 ChangeLog:
 ----------
+2018-07-17:
+ - Added parameter "-p" to specify the PLP ID for DVB-T2. In Germany, some
+   "connect" channels are under PLP 1, which can now be found with t2scan.
 2018-04-21
  - Changed version string to 20180421 for the 0.3 release
  - fixed problem that some audio pids were not included in vdr output

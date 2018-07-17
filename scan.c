@@ -91,6 +91,7 @@ struct t2scan_flags flags = {
   0,                // scan DVB-T and DVB-T2 if type is t
   0,                // default lowest channel to scan
   133,              // default highest channel to scan
+  0,                // plpid to be used for DVB-T2
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
@@ -447,6 +448,10 @@ static const char * ext_opts = "%s expert help\n"
   "               exclude duplicate services from output\n"
   "               NOTE: If a service is found multiple times, this will\n"
   "                     only consider the instance found last!\n"
+  "       -p <N>, --plp <N>\n"
+  "               use the given PLP ID for scanning. Default: 0\n"
+  "               NOTE: For German DVB-T2, some additional \"connect\" channels\n"
+  "                     are found with PLP ID 1.\n"
   ".................General.................\n"
   "       -I <charset>, --charset <charset>\n"
   "               convert to charset, i.e. 'UTF-8', 'ISO-8859-15'\n"
@@ -549,6 +554,7 @@ static struct option long_options[] = {
     {"long-demux-timeout", no_argument,       NULL, 'F'},
     {"output-services"   , required_argument, NULL, 's'},
     {"lock-timeout"      , required_argument, NULL, 'S'},
+    {"plp"               , required_argument, NULL, 'p'},
 //    {"inversion"         , required_argument, NULL, 'i'},
 //    {"dvbc-modulation"   , required_argument, NULL, 'Q'},
 //    {"dvbc-extflags"     , required_argument, NULL, 'e'},
@@ -2283,7 +2289,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                        test.guard             = caps_guard_interval;
                        test.hierarchy         = caps_hierarchy;
                        test.delsys            = delsys;
-                       test.plp_id            = 0;
+                       test.plp_id            = flags.plp_id;
                        time2carrier = carrier_timeout(test.delsys);
                        time2lock    = lock_timeout   (test.delsys);
                        if (is_already_scanned_transponder(&test)) {
@@ -2474,7 +2480,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:q:rs:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:p:q:rs:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2573,6 +2579,9 @@ int main(int argc, char ** argv) {
                 output_format = OUTPUT_VDR;
                 flags.vdr_version = 21;
              }
+             break;
+     case 'p': //plp id to be used
+             flags.plp_id = strtoul(optarg, NULL, 0);
              break;
      case 'P': //ATSC PSIP scan
              no_ATSC_PSIP = 1;
