@@ -15,7 +15,7 @@ t2scan vs w_scan:
 - Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-S".
 - Added a parameter to determine the lowest channel to scan ("-c") and the highest channel to scan ("-C"). This makes the scan much faster if the user knows which channels are used in the user's region.
 - Only DVB-T/T2 (ATSC available, but untested), support for DVB-C and DVB-S/S2 has been removed.
-- Ability to scan other PLP IDs than only PLP ID 0 ("-p") for DVB-T2. This allows to find the so-called "connect" channels in Germany.
+- Ability to scan other PLP IDs than only PLP ID 0 for DVB-T2. Depending on country, a default PLP may be preselected (e.g. for Austria: PLP 1, for most other countries: PLP 0). This can be overriden with "-p" parameter. E.g. using "-p1" allows to find the so-called "connect" channels in Germany. NOTE: Currently t2scan allows only to scan for a single PLP at once.
 - Removed several options, trying to keep this tool very simple.
 
 w_scan vs scan:

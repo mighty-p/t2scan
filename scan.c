@@ -2320,7 +2320,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                        test.guard             = caps_guard_interval;
                        test.hierarchy         = caps_hierarchy;
                        test.delsys            = delsys;
-                       test.plp_id            = (flags.plp_id<0) ? dvbt2_plp_id : flags.plp_id;
+                       test.plp_id            = (flags.override_plp_id<0) ? dvbt2_plp_id : flags.override_plp_id;
                        time2carrier = carrier_timeout(test.delsys);
                        time2lock    = lock_timeout   (test.delsys);
                        if (is_already_scanned_transponder(&test)) {
@@ -2612,7 +2612,7 @@ int main(int argc, char ** argv) {
              }
              break;
      case 'p': //plp id to be used
-             flags.plp_id = strtoul(optarg, NULL, 0);
+             flags.override_plp_id = strtoul(optarg, NULL, 0);
              break;
      case 'P': //ATSC PSIP scan
              no_ATSC_PSIP = 1;
