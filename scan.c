@@ -467,11 +467,12 @@ static const char * ext_opts = "%s expert help\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
   "       -F, --long-demux-timeout\n"
   "               use long filter timeout\n"
-  "       -S <N>, --lock-timeout <N>\n"
-  "               tuning speed (lock timeout)\n"
-  "                 1 = fastest [default]\n"
-  "                 2 = medium\n"
-  "                 3 = slowest\n"
+  "       -S <N>, --multiply-timeouts <N>\n"
+  "               tuning speed (multiply tuning timeouts)\n"
+  "                 1 = fastest (2 sec for carrier, 4 sec for lock) [default]\n"
+  "                 2 = double (4 sec for carrier, 8 sec for lock)\n"
+  "                 3 = triple (6 sec for carrier, 12 sec for lock)\n"
+  "                 ...\n"
   "       -r\n"
   "               show reception values (strength and quality)\n"
   "               in the debug output. If -d is used (marking of\n"
@@ -558,7 +559,7 @@ static struct option long_options[] = {
     {"adapter"           , required_argument, NULL, 'a'},
     {"long-demux-timeout", no_argument,       NULL, 'F'},
     {"output-services"   , required_argument, NULL, 's'},
-    {"lock-timeout"      , required_argument, NULL, 'S'},
+    {"multiply-timeouts"      , required_argument, NULL, 'S'},
     {"plp"               , required_argument, NULL, 'p'},
 //    {"inversion"         , required_argument, NULL, 'i'},
 //    {"dvbc-modulation"   , required_argument, NULL, 'Q'},

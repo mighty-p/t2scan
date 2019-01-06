@@ -2,7 +2,7 @@
  * Simple MPEG/DVB parser to achieve network/service information without initial tuning data
  *
  * Copyright (C) 2006 - 2014 Winfried Koehler 
- * Copyright (C) 2017 - 2018 mighty-p
+ * Copyright (C) 2017 - 2019 mighty-p
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -382,15 +382,18 @@ void get_time(struct timespec * dest) {
 
 void set_timeout(uint16_t msec, struct timespec * dest) {
   struct timespec t;
-  uint32_t nsec;
+  uint32_t nsec, timeoutMsec, timeoutSec;
   uint8_t  sec;
 
+  timeoutMsec = msec % 1000U;
+  timeoutSec = msec / 1000U;
   clock_gettime(CLK_SPEC, &t);
-  sec  = (t.tv_nsec + msec * 1000000U) / 1000000000U;
-  nsec = (t.tv_nsec + msec * 1000000U) % 1000000000U;
+  sec = (t.tv_nsec + timeoutMsec * 1000000U) / 1000000000U + timeoutSec;
+  nsec = (t.tv_nsec + timeoutMsec * 1000000U) % 1000000000U;
   dest->tv_sec  = t.tv_sec + sec;
   dest->tv_nsec = nsec;
-//dbg("now = %ld.%.9li timeout = %ld.%.9li\n", t.tv_sec, t.tv_nsec, dest->tv_sec, dest->tv_nsec);
+
+//dbg("msec = %d now = %ld.%.9li timeout = %ld.%.9li\n", msec, t.tv_sec, t.tv_nsec, dest->tv_sec, dest->tv_nsec);
 }
 
 int timeout_expired(struct timespec * src) {
