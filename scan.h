@@ -52,7 +52,6 @@ struct t2scan_flags {
    uint8_t     need_2g_fe;
    uint32_t    list_id;
    uint8_t     tuning_timeout;
-   uint8_t     filter_timeout;
    uint8_t     dedup;
    uint8_t     reception_info;
    uint8_t     dump_provider;

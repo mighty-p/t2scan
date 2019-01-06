@@ -81,7 +81,6 @@ enum __extflags {
         ignore,
         wscan_version,
         tuning_timeout,
-        filter_timeout,
         fe_type,
         list_idx
 };
@@ -112,9 +111,6 @@ void parse_t2scan_flags(const char * input_buffer, struct t2scan_flags * flags) 
                                 break;
                         case tuning_timeout:
                                 flags->tuning_timeout = strtoul(token, NULL, 10);
-                                break;
-                        case filter_timeout:
-                                flags->filter_timeout = strtoul(token, NULL, 10);
                                 break;
                         case fe_type:
                                 flags->scantype = txt_to_scantype(token);

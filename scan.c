@@ -96,7 +96,6 @@ struct t2scan_flags flags = {
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
   1,                // tuning speed {1 = fast, 2 = medium, 3 = slow}
-  0,                // filter timeout {0 = default, 1 = long} 
   0,                // default: no deduplicating // NOTE: I may change this after next release
   0,                // default: don't give out information about reception
   1,                // dump_provider, dump also provider name
@@ -467,8 +466,8 @@ static const char * ext_opts = "%s expert help\n"
   "       -a <N>, --adapter <N>\n"
   "               use device /dev/dvb/adapterN/ [default: auto detect]\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
-  "       -F, --long-demux-timeout\n"
-  "               use long filter timeout\n"
+//  "       -F, --long-demux-timeout\n"
+//  "               use long filter timeout\n"
   "       -S <N>, --multiply-timeouts <N>\n"
   "               tuning speed (multiply tuning timeouts)\n"
   "                 1 = fastest (2 sec for carrier, 4 sec for lock) [default]\n"
@@ -1491,10 +1490,11 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
   s->run_once = run_once;
   s->segmented = segmented;
   s->timeout = 1; // add 1sec for safety..
-  if (flags.filter_timeout > 0)
-     s->timeout += 5 * repetition_rate(flags.scantype, table_id);
-  else
-     s->timeout += repetition_rate(flags.scantype, table_id);
+//  if (flags.filter_timeout > 0)
+  s->timeout += /*5*/10 * repetition_rate(flags.scantype, table_id);
+//  else
+//     s->timeout += repetition_rate(flags.scantype, table_id);
+//printf("Filter timeout = %d\n",s->timeout);
 
   s->table_id_ext = table_id_ext;
   s->section_version_number = -1;
@@ -2557,9 +2557,6 @@ int main(int argc, char ** argv) {
              break;
      case 'E': //exclude encrypted channels
              flags.ca_select = 0;
-             break;
-     case 'F': //filter timeout
-             flags.filter_timeout = 1;
              break;
      case 'h': // help
              bad_usage("t2scan");
