@@ -47,7 +47,7 @@ struct t2scan_flags {
    uint8_t     dvbt_type;
    uint8_t     channel_min;
    uint8_t     channel_max;
-   uint8_t     plp_id;
+   int         plp_id;
    uint8_t     atsc_type;
    uint8_t     need_2g_fe;
    uint32_t    list_id;

@@ -84,7 +84,9 @@ int choose_country (const char * country,
                     int * atsc,
                     int * dvb,
                     uint16_t * scan_type,
-                    int * channellist) {
+                    int * channellist,
+                    int * dvbt2_plp_id
+) {
         if (*channellist == USERLIST) return 0;
 
         if (strcasecmp(country_to_short_name(txt_to_country(country)), country)) {
@@ -99,6 +101,7 @@ int choose_country (const char * country,
         switch(txt_to_country(country)) {
 
                 case    AT:     //      AUSTRIA
+                        *dvbt2_plp_id=1; 
                 case    BE:     //      BELGIUM
                 case    CH:     //      SWITZERLAND
                 case    CO:     //      COLOMBIA, DVB-C + DVB-T2

@@ -91,7 +91,7 @@ struct t2scan_flags flags = {
   0,                // scan DVB-T and DVB-T2 if type is t
   0,                // default lowest channel to scan
   133,              // default highest channel to scan
-  0,                // plpid to be used for DVB-T2
+  -1,                // user-defined plp id to be used for DVB-T2
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
@@ -118,6 +118,7 @@ static unsigned int dvbc_symbolrate_max = 1;    // initialization of symbolrate 
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
 static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T with UHF channels below 790 MHz.
+static int dvbt2_plp_id = 0;                    // PLP ID to be used in DVB-T2 single-PLP (SISO) mode (differs by county, can be overridden with -p parameter)
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                
 static unsigned int serv_select = 3;            // 20080106: radio and tv as default (no service/other). 20090227: flag type vars shouldnt be signed. 
@@ -453,6 +454,7 @@ static const char * ext_opts = "%s expert help\n"
   "               use the given PLP ID for scanning. Default: 0\n"
   "               NOTE: For German DVB-T2, some additional \"connect\" channels\n"
   "                     are found with PLP ID 1.\n"
+  "                     For Austria currently all channels are under PLP ID 1.\n"
   ".................General.................\n"
   "       -I <charset>, --charset <charset>\n"
   "               convert to charset, i.e. 'UTF-8', 'ISO-8859-15'\n"
@@ -2318,7 +2320,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                        test.guard             = caps_guard_interval;
                        test.hierarchy         = caps_hierarchy;
                        test.delsys            = delsys;
-                       test.plp_id            = flags.plp_id;
+                       test.plp_id            = (flags.plp_id<0) ? dvbt2_plp_id : flags.plp_id;
                        time2carrier = carrier_timeout(test.delsys);
                        time2lock    = lock_timeout   (test.delsys);
                        if (is_already_scanned_transponder(&test)) {
@@ -2709,7 +2711,7 @@ int main(int argc, char ** argv) {
            int atsc = ATSC_type;
            int dvb  = scantype;
            flags.atsc_type = ATSC_type;
-           choose_country(country, &atsc, &dvb, &scantype, &this_channellist);
+           choose_country(country, &atsc, &dvb, &scantype, &this_channellist, &dvbt2_plp_id);
            //dvbc: setting qam loop
            if ((modulation_flags & MOD_OVERRIDE_MAX) == MOD_USE_STANDARD)
               modulation_max = dvbc_qam_max(2, this_channellist);
