@@ -1336,6 +1336,10 @@ static uint16_t check_frontend(int fd, int verbose) {
      ioctl(fd, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks);
      info("signal %04x | snr %04x | ber %08x | unc %08x | ", \
                                                   signal, snr, ber, uncorrected_blocks);
+     if (status & FE_HAS_SIGNAL)
+        info("FE_HAS_SIGNAL ");
+     if (status & FE_HAS_CARRIER)
+        info("FE_HAS_CARRIER ");
      if (status & FE_HAS_LOCK)
         info("FE_HAS_LOCK");
      info("\n");
@@ -2384,7 +2388,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  // look for some signal.
                  while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                     ret = check_frontend(frontend_fd,0);
+                     ret = check_frontend(frontend_fd, (verbosity>2)? 1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
                         verbose("\n        (%.3fsec): %s%s%s (0x%X)",
@@ -2408,7 +2412,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
 
                  while((ret & FE_HAS_LOCK) == 0) {
-                     ret = check_frontend(frontend_fd,0);
+                     ret = check_frontend(frontend_fd, (verbosity>2)?1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
                         verbose("\n        (%.3fsec): %s%s%s (0x%X)",
