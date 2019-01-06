@@ -5,6 +5,7 @@ ChangeLog:
   - Set default PLP for Autria to 1. "-p" can still be used to override that.
   - Remove parameter for using long filter timout. Now always use an even longer timeout
     (makes sure that also channels with my services on it are scanned it correctly)
+  - bump version number to 20190106
 2018-07-17:
  - Added parameter "-p" to specify the PLP ID for DVB-T2. In Germany, some
    "connect" channels are under PLP 1, which can now be found with t2scan.
