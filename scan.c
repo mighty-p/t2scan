@@ -1348,15 +1348,6 @@ static uint16_t check_frontend(int fd, int verbose) {
 }
 
 static int set_frontend(int frontend_fd, struct transponder * t) {
-  // first clear cache
-  struct dtv_property p[] = {{.cmd = DTV_CLEAR, .u.data = DTV_UNDEFINED }};
-  struct dtv_properties b = {.num = 1, .props = p};
-
-  EMUL(em_getproperty, &b)
-  if (ioctl(frontend_fd, FE_GET_PROPERTY, &b) != 0)
-     info("Clearing frontend cache failed\n");
-
-  // now build the new command to set frontend (to tune)
   int sequence_len = 0;
   struct dtv_property cmds[13];
   struct dtv_properties cmdseq = {.num=0, .props=cmds};
@@ -1390,15 +1381,16 @@ static int set_frontend(int frontend_fd, struct transponder * t) {
      case 0x0500 ... 0x05FF:
         #ifdef HWDBG
         #define set_cmd_sequence(_cmd, _data)   cmds[sequence_len].cmd = _cmd; \
-                                                if (_data) cmds[sequence_len].u.data = _data; \
+                                                cmds[sequence_len].u.data = _data; \
                                                 cmdseq.num = ++sequence_len; \
                                                 info("%s:%d: %-40s = %d\n", __FUNCTION__,__LINE__, \
                                                       property_name(_cmd), _data)
         #else
         #define set_cmd_sequence(_cmd, _data)   cmds[sequence_len].cmd = _cmd; \
-                                                if (_data) cmds[sequence_len].u.data = _data; \
+                                                cmds[sequence_len].u.data = _data; \
                                                 cmdseq.num = ++sequence_len
         #endif
+        set_cmd_sequence(DTV_CLEAR, DTV_UNDEFINED);
         switch(t->type) {
            case SCAN_CABLE:
               set_cmd_sequence(DTV_DELIVERY_SYSTEM,   t->delsys);
@@ -1432,13 +1424,13 @@ static int set_frontend(int frontend_fd, struct transponder * t) {
            default:
               fatal("Unhandled type %d\n", t->type);
            }
-        set_cmd_sequence(DTV_TUNE, NULL); /*DTV_UNDEFINED*/
+        set_cmd_sequence(DTV_TUNE, DTV_UNDEFINED);
         EMUL(em_setproperty, &cmdseq)                        
         if (ioctl(frontend_fd, FE_SET_PROPERTY, &cmdseq) < 0) {
-           error("Setting frontend parameters failed\n");
+           errorn("Setting frontend parameters failed\n");
            return -1;
         } else {
-           info("Frontend set. (cmdlen=%d)\n",sequence_len);
+           if (verbosity>3) info("Frontend set. (cmdlen=%d)\n",sequence_len);
         }
         break;
      default:
@@ -2398,7 +2390,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  // look for some signal.
                  while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>2)? 1:0);
+                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
                         verbose("\n        (%.3fsec): %s%s%s (0x%X)",
@@ -2422,7 +2414,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
 
                  while((ret & FE_HAS_LOCK) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>2)?1:0);
+                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
                         verbose("\n        (%.3fsec): %s%s%s (0x%X)",
