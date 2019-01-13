@@ -113,4 +113,4 @@ on the Github project page: https://github.com/mighty-p/t2scan
 - "GTC" for providing a patch to fix the tuning timeouts code
 - Andreas Mikula for finding out that Austria uses PLP ID 1
 - "HelmutB" for informing me about Austria using PLP ID 1 and for testing
-
+- "clausmuus" for helping me test why scanning on some devices has not work reliably
