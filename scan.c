@@ -1326,7 +1326,7 @@ static uint16_t check_frontend(int fd, int verbose) {
   fe_status_t status;
   EMUL(em_status, &status)
   if (ioctl(fd, FE_READ_STATUS, &status) < 0) {
-     fatal("FE_READ_STATUS failed during scan: %d %s\n", errno, strerror(errno));
+     error("FE_READ_STATUS failed during scan: %d %s\n", errno, strerror(errno));
   }
   if (verbose && !flags.emulate) {
      uint16_t snr, signal;
