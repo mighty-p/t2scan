@@ -2892,6 +2892,8 @@ int main(int argc, char ** argv) {
              "verify that no dvb application (i.e. vdr) is running.\n",
              scantype_to_text(scantype));
      }
+
+  usleep(500000);
   EMUL(em_open, &frontend_fd)
   if ((frontend_fd = open(frontend_devname, fe_open_mode)) < 0) {
      cleanup();

@@ -2,6 +2,7 @@ ChangeLog:
 ----------
 2019-01-13:
   - Check if frontend is in good status after open. Don't start scan if it is not.
+  - When having checked which frontend to use, sleep 500ms before the selected one is opened again 
 2019-01-06:
   - Fixed tuning timeout code (thanks to GTC for the patch)
   - Set default PLP for Autria to 1. "-p" can still be used to override that.
