@@ -1,5 +1,7 @@
 ChangeLog:
 ----------
+2019-01-13:
+  - Check if frontend is in good status after open. Don't start scan if it is not.
 2019-01-06:
   - Fixed tuning timeout code (thanks to GTC for the patch)
   - Set default PLP for Autria to 1. "-p" can still be used to override that.
