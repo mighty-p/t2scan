@@ -2307,26 +2307,20 @@ static void network_scan(int frontend_fd, int tuning_data) {
               copy_fe_params(t, ptest);
               print_transponder(buffer, t);
               info("        signal ok:\t%s\n", buffer);
-              switch(ptest->type) {
-                 case SCAN_TERRCABLE_ATSC:
-                    //initial_table_lookup(frontend_fd); // would this work here? Don't know, need Info!
-                    break;
-                 default:                                             
-                    if (initial_table_lookup(frontend_fd)) {
-                      print_transponder(buffer,current_tp);
-                      info("        %s : scanning for services\n",buffer);
-                      scan_tp(); 
-                      if (flags.reception_info==1)
-                         print_signal_info(frontend_fd, current_tp);
-                      AddItem(scanned_transponders, current_tp);
-                    }
-                    break;
-                 }
-                 break;                
-              } // END: for offs
-           } // END: for channel       
-        } // END: for mod_parm
-     } // END: for delsys_parm
+                                                      
+              if (initial_table_lookup(frontend_fd)) {
+                print_transponder(buffer,current_tp);
+                info("        %s : scanning for services\n",buffer);
+                scan_tp(); 
+                if (flags.reception_info==1)
+                   print_signal_info(frontend_fd, current_tp);
+                AddItem(scanned_transponders, current_tp);
+              }              
+              break;                
+           } // END: for offs
+        } // END: for channel       
+     } // END: for mod_parm
+  } // END: for delsys_parm
 
 }
 
