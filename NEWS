@@ -1,5 +1,9 @@
 ChangeLog:
 ----------
+2019-01-19:
+  - Remove now unused code from w_scan for DVB-C, which is not supported in t2scan
+  - Re-add some previously removed code for ATSC; ATSC scan is still completely untested
+  - Smaller documentation fixes
 2019-01-13:
   - Check if frontend is in good status after open. Don't start scan if it is not.
   - When having checked which frontend to use, sleep 500ms before the selected one is opened again 
