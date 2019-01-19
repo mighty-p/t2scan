@@ -87,7 +87,7 @@ To exclude encrypted services from output: `t2scan -E`
 
 To create channel data for xine (instead of vdr): `t2scan -o xine`
 
-t2scan detects your country from your system settings and uses an appropriate channel list to scan. Use the `-y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually. Normally this should not be needed since for most countries the generic channel list for Europe is used.
+t2scan detects your country from your system settings and uses an appropriate channel list to scan. Use the `-Y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually. Normally this should not be needed since for most countries the generic channel list for Europe is used.
 
 For standard t2scan options see `t2scan -h`. For expert options, see `t2scan -H`.
 
