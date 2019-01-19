@@ -2,7 +2,7 @@
  * Simple MPEG/DVB parser to achieve network/service information without initial tuning data
  *
  * Copyright (C) 2006 - 2014 Winfried Koehler
- * Copyright (C) 2017 - 2018 mighty-p 
+ * Copyright (C) 2017 - 2019 mighty-p 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -91,7 +91,7 @@ struct t2scan_flags flags = {
   0,                // scan DVB-T and DVB-T2 if type is t
   0,                // default lowest channel to scan
   133,              // default highest channel to scan
-  -1,                // user-defined plp id to be used for DVB-T2
+  -1,               // user-defined plp id to be used for DVB-T2
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
@@ -112,8 +112,6 @@ static unsigned int delsys_min = 0;             // initialization of delsys loop
 static unsigned int delsys_max = 0;             // initialization of delsys loop. 0 = delsys legacy.
 static unsigned int modulation_min = 0;         // initialization of modulation loop. QAM64  if FE_QAM
 static unsigned int modulation_max = 1;         // initialization of modulation loop. QAM256 if FE_QAM
-static unsigned int dvbc_symbolrate_min = 0;    // initialization of symbolrate loop. 6900
-static unsigned int dvbc_symbolrate_max = 1;    // initialization of symbolrate loop. 6875
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
 static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T with UHF channels below 790 MHz.
@@ -130,8 +128,7 @@ static bool bandwidth_auto                              = true;
 static enum fe_spectral_inversion caps_inversion        = INVERSION_AUTO;
 static enum fe_code_rate caps_fec                       = FEC_AUTO;
 static enum fe_modulation caps_qam                      = QAM_AUTO;
-static enum fe_modulation this_qam                      = QAM_64;
-//static enum fe_modulation this_atsc                     = VSB_8;
+static enum fe_modulation this_atsc                     = VSB_8;
 static enum fe_transmit_mode caps_transmission_mode     = TRANSMISSION_MODE_AUTO;
 static enum fe_guard_interval caps_guard_interval       = GUARD_INTERVAL_AUTO;
 static enum fe_hierarchy caps_hierarchy                 = HIERARCHY_AUTO;
@@ -228,7 +225,6 @@ struct transponder * alloc_transponder(uint32_t frequency, unsigned delsys, uint
 
 const char * scantype_to_text(scantype_t scantype) {
   switch(scantype) {
-     case SCAN_CABLE:          return "CABLE";
      case SCAN_TERRESTRIAL:    return "TERRESTRIAL";
      case SCAN_TERRCABLE_ATSC: return "TERRCABLE_ATSC";
      default: return "UNKNOWN";
@@ -267,16 +263,6 @@ void print_transponder(char * dest, struct transponder * t) {
                 t->network_id,
                 t->transport_stream_id);
         break;
-     case SCAN_CABLE:
-        sprintf(dest, "%-8s f = %d kHz S%dC%s  (%u:%u:%u)",
-                modulation_name(t->modulation),
-                freq_scale(t->frequency, 1e-3),
-                freq_scale(t->symbolrate, 1e-3),
-                vdr_fec_name(t->coderate),
-                t->original_network_id,
-                t->network_id,
-                t->transport_stream_id);
-        break;
      default:
         warning("unimplemented frontend type %d\n", t->type);
      }
@@ -305,10 +291,6 @@ bool fe_supports_scan(int fd, scantype_t type, struct dvb_frontend_info info) {
               if (delsys == SYS_DVBT || delsys == SYS_DVBT2)
                  result = true;
               break;
-           case SCAN_CABLE:
-              if (delsys == SYS_DVBC_ANNEX_AC || delsys == SYS_DVBC2)
-                 result = true;
-              break;
            case SCAN_TERRCABLE_ATSC:
               if (delsys == SYS_ATSC)
                  result = true;
@@ -323,8 +305,6 @@ bool fe_supports_scan(int fd, scantype_t type, struct dvb_frontend_info info) {
      p[0].cmd = DTV_DELIVERY_SYSTEM;
      switch(type) {
         case SCAN_TERRESTRIAL:    p[0].u.data = SYS_DVBT;          break;
-        case SCAN_CABLE:          p[0].u.data = SYS_DVBC_ANNEX_AC; break;
-        case SCAN_SATELLITE:      p[0].u.data = SYS_DVBS;          break;
         case SCAN_TERRCABLE_ATSC: p[0].u.data = SYS_ATSC;          break;
         default: return 0;
         }
@@ -466,8 +446,6 @@ static const char * ext_opts = "%s expert help\n"
   "       -a <N>, --adapter <N>\n"
   "               use device /dev/dvb/adapterN/ [default: auto detect]\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
-//  "       -F, --long-demux-timeout\n"
-//  "               use long filter timeout\n"
   "       -S <N>, --multiply-timeouts <N>\n"
   "               tuning speed (multiply tuning timeouts)\n"
   "                 1 = fastest (2 sec for carrier, 4 sec for lock) [default]\n"
@@ -478,48 +456,6 @@ static const char * ext_opts = "%s expert help\n"
   "               show reception values (strength and quality)\n"
   "               in the debug output. If -d is used (marking of\n"
   "               duplicates), values will be shown there as well.\n"
-//  ".................DVB-C...................\n"
-//  "       -i N, --inversion N\n"
-//  "               spectral inversion setting for cable TV\n"
-//  "                       (0: off, 1: on, 2: auto [default])\n"
-//  "       -Q N, --dvbc-modulation N\n"
-//  "               set DVB-C modulation, see table:\n"
-//  "                       0  = QAM64\n"
-//  "                       1  = QAM256\n"
-//  "                       2  = QAM128\n"
-//  "               NOTE: for experienced users only!!\n"
-//  "       -e N,--dvbc-extflags N\n"
-//  "               extended scan flags (DVB-C only),\n"
-//  "               Any combination of these flags:\n"
-//  "               1 = use extended symbolrate list\n"
-//  "                       enables scan of symbolrates\n"
-//  "                       6111, 6250, 6790, 6811, 5900,\n"
-//  "                       5000, 3450, 4000, 6950, 7000,\n"
-//  "                       6952, 6956, 6956.5, 5217\n"
-//  "               2 = extended QAM scan (enable QAM128)\n"
-//  "                       recommended for Nethterlands and Finland\n"
-//  "               NOTE: extended scan will be *slow*\n"
-//  "       -S N, dvbc-symbolrate N\n"
-//  "               set DVB-C symbol rate, see table:\n"
-//  "                       0  = 6.9000 MSymbol/s\n"
-//  "                       1  = 6.8750 MSymbol/s\n"
-//  "                       2  = 6.9565 MSymbol/s\n"
-//  "                       3  = 6.9560 MSymbol/s\n"
-//  "                       4  = 6.9520 MSymbol/s\n"
-//  "                       5  = 6.9500 MSymbol/s\n"
-//  "                       6  = 6.7900 MSymbol/s\n"
-//  "                       7  = 6.8110 MSymbol/s\n"
-//  "                       8  = 6.2500 MSymbol/s\n"
-//  "                       9  = 6.1110 MSymbol/s\n"
-//  "                       10 = 6.0860 MSymbol/s\n"
-//  "                       11 = 5.9000 MSymbol/s\n"
-//  "                       12 = 5.4830 MSymbol/s\n"
-//  "                       13 = 5.2170 MSymbol/s\n"
-//  "                       14 = 5.1560 MSymbol/s\n"
-//  "                       15 = 5.0000 MSymbol/s\n"
-//  "                       16 = 4.0000 MSymbol/s\n"
-//  "                       17 = 3.4500 MSymbol/s\n"
-//  "               NOTE: for experienced users only!!\n"
   ".................ATSC (untested).........\n"
   "       -m <mode>, --scan-mode <mode>\n"
   "               t2scan supports the following scan modes:\n"
@@ -562,10 +498,6 @@ static struct option long_options[] = {
     {"output-services"   , required_argument, NULL, 's'},
     {"multiply-timeouts"      , required_argument, NULL, 'S'},
     {"plp"               , required_argument, NULL, 'p'},
-//    {"inversion"         , required_argument, NULL, 'i'},
-//    {"dvbc-modulation"   , required_argument, NULL, 'Q'},
-//    {"dvbc-extflags"     , required_argument, NULL, 'e'},
-//    {"dvbc-symbolrate"   , required_argument, NULL, 'S'},
     {"use-pat"           , required_argument, NULL, 'P'},
     {NULL                , 0                , NULL,  0 },
 };
@@ -598,45 +530,6 @@ int device_is_preferred(int caps, const char * frontend_name, uint16_t scantype)
      /* wt2scan preferres devices which are DVB-{C,T}2 */
      preferred = 2; // preferred
   return preferred;        
-}
-
-static int dvbc_modulation(int index) {
-  switch(index) {
-     case 0:   return QAM_64;
-     case 1:   return QAM_256;
-     case 2:   return QAM_128;                        
-     default:  return QAM_AUTO;
-     }
-}
-
-static int dvbc_symbolrate(int index) {
-  switch(index) { 
-     // 8MHz, Rolloff 0.15 -> 8000000 / 1.15 -> symbolrate <= 6956521,74
-     case 0:   return 6900000;  // 8MHz, 6.900MSymbol/s is mostly used for 8MHz
-     case 1:   return 6875000;  // 8MHz, 6.875MSymbol/s also used quite often for 8MHz
-     case 2:   return 6956500;  // 8MHz
-     case 3:   return 6956000;  // 8MHz
-     case 4:   return 6952000;  // 8MHz
-     case 5:   return 6950000;  // 8MHz
-     case 6:   return 6790000;  // 8MHz
-     case 7:   return 6811000;  // 8MHz
-     case 8:   return 6250000;  // 8MHz
-     case 9:   return 6111000;  // 8MHz
-
-     // 7MHz, Rolloff 0.15 -> 7000000 / 1.15 -> symbolrate <= 6086956,52
-     case 10:  return 6086000;  // 8MHz, 7MHz, sort 7MHz descending by probability
-     case 11:  return 5900000;  // 8MHz, 7MHz
-     case 12:  return 5483000;  // 8MHz, 7MHz
-
-     // 6MHz, Rolloff 0.15 -> 6000000 / 1.15 -> symbolrate <= 5217391,30
-     case 13:  return 5217000;  // 6MHz, 7MHz, 8MHz, sort 6MHz descending by probability
-     case 14:  return 5156000;  // 6MHz, 7MHz, 8MHz
-     case 15:  return 5000000;  // 6MHz, 7MHz, 8MHz
-     case 16:  return 4000000;  // 6MHz, 7MHz, 8MHz
-     case 17:  return 3450000;  // 6MHz, 7MHz, 8MHz
-
-     default:  return 0;
-     }
 }
 
 uint16_t carrier_timeout(uint8_t delsys) {
@@ -1355,11 +1248,6 @@ static int set_frontend(int frontend_fd, struct transponder * t) {
   struct dtv_properties cmdseq = {.num=0, .props=cmds};
 
   switch(t->type) {
-     case SCAN_CABLE: // note: fall trough to TERR && ATSC
-        if ((t->symbolrate < fe_info.symbol_rate_min) || (t->symbolrate > fe_info.symbol_rate_max)) {
-           info("\t skipped: (srate %u unsupported by driver)\n", t->symbolrate);
-           return -2;
-           }                        
      case SCAN_TERRESTRIAL:
         if (t->delsys == SYS_DVBT2) {
            if (!(fe_info.caps & FE_CAN_2G_MODULATION)) {
@@ -1394,14 +1282,6 @@ static int set_frontend(int frontend_fd, struct transponder * t) {
         #endif
         set_cmd_sequence(DTV_CLEAR, DTV_UNDEFINED);
         switch(t->type) {
-           case SCAN_CABLE:
-              set_cmd_sequence(DTV_DELIVERY_SYSTEM,   t->delsys);
-              set_cmd_sequence(DTV_FREQUENCY,         t->frequency);
-              set_cmd_sequence(DTV_INVERSION,         t->inversion);
-              set_cmd_sequence(DTV_MODULATION,        t->modulation);
-              set_cmd_sequence(DTV_SYMBOL_RATE,       t->symbolrate);
-              set_cmd_sequence(DTV_INNER_FEC,         t->coderate);
-              break;
            case SCAN_TERRESTRIAL:
               set_cmd_sequence(DTV_DELIVERY_SYSTEM,   t->delsys);
               if (t->delsys == SYS_DVBT2) {
@@ -1498,12 +1378,7 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
   s->run_once = run_once;
   s->segmented = segmented;
   s->timeout = 1; // add 1sec for safety..
-//  if (flags.filter_timeout > 0)
-  s->timeout += /*5*/10 * repetition_rate(flags.scantype, table_id);
-//  else
-//     s->timeout += repetition_rate(flags.scantype, table_id);
-//printf("Filter timeout = %d\n",s->timeout);
-
+  s->timeout += 10 * repetition_rate(flags.scantype, table_id);
   s->table_id_ext = table_id_ext;
   s->section_version_number = -1;
   s->next = 0;
@@ -1550,21 +1425,16 @@ static void set_bit(uint8_t *bitfield, int bit) {
 static int parse_section(struct section_buf * s) {
   const unsigned char * buf = s->buf;
   uint8_t  table_id;
-//uint8_t  section_syntax_indicator;
   uint16_t section_length;                                        // 12bit: 0..4095
   uint16_t table_id_ext;
   uint8_t  section_version_number;
-//uint8_t  current_next_indicator;
   uint8_t  section_number;
   uint8_t  last_section_number;
-//int pcr_pid;
-//int program_info_length;
   int i;
 
   table_id = buf[0];
   if (s->table_id != table_id)
      return -1;
-//section_syntax_indicator = buf[1] & 0x80;
   section_length = (((buf[1] & 0x0f) << 8) | buf[2]) - 9;         // skip 9bytes: 5byte header + 4byte CRC32 
 
   if (! crc_check(&buf[0],section_length+12)) {
@@ -1586,18 +1456,13 @@ static int parse_section(struct section_buf * s) {
         }
      memcpy(&p[sizeof(cItem)-1], buf, SECTION_BUF_SIZE);
      AddItem(s->garbage, p);
-     // if ((s->garbage)->count > 3)
-     //    return fuzzy_section(s);
      return 0;
      }
 
   table_id_ext = (buf[3] << 8) | buf[4];                          // p.program_number
   section_version_number = (buf[5] >> 1) & 0x1f;                  // p.version_number = getBits (b, 0, 42, 5); -> 40 + 1 -> 5 bit weit? -> version_number = buf[5] & 0x3e;
-//current_next_indicator = buf[5] & 0x01;
   section_number = buf[6];
   last_section_number = buf[7];
-//pcr_pid = ((buf[8] & 0x1f) << 8) | buf[9];
-//program_info_length = ((buf[10] & 0x0f) << 8) | buf[11];
 
   if (s->segmented && s->table_id_ext != -1 && s->table_id_ext != table_id_ext) {
      /* find or allocate actual section_buf matching table_id_ext */
@@ -2003,7 +1868,6 @@ static int is_already_scanned_transponder(struct transponder * tn) {
   for(t = scanned_transponders->first; t; t = t->next) {
      switch(tn->type) {
         case SCAN_TERRESTRIAL:
-        case SCAN_CABLE:
            if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {
               //return (t->source >> 8) == 64;
               return 1;
@@ -2235,9 +2099,20 @@ static bool channel_in_userlist(int channel) {
   return false;
 }
 
-static void network_scan(int frontend_fd, int tuning_data) {
+fe_delivery_system_t atsc_del_sys(fe_modulation_t modulation) {
+        switch (modulation) {
+        case VSB_8:
+        case VSB_16:
+                return SYS_ATSC;
+        default:;
+                return SYS_DVBC_ANNEX_B;
+        }
+}
 
-  uint32_t f = 0, channel, mod_parm, sr_parm, offs, this_sr=0;
+
+
+static void network_scan(int frontend_fd, int tuning_data) {
+  uint32_t f = 0, channel, mod_parm, offs;
   uint8_t delsys_parm, delsys = 0, last_delsys = 255;
   uint16_t ret = 0, lastret = 0;
   struct transponder * t = NULL, * ptest;
@@ -2264,27 +2139,14 @@ static void network_scan(int frontend_fd, int tuning_data) {
               modulation_max=ATSC_QAM;
               break;
            }
-        // disable symbolrate loop
-        dvbc_symbolrate_min=dvbc_symbolrate_max=0;
         break;
      case SCAN_TERRESTRIAL:
         // disable qam loop, disable symbolrate loop
         modulation_min=modulation_max=0;
-        dvbc_symbolrate_min=dvbc_symbolrate_max=0;
         // enable legacy delsys loop.
         delsys_min = delsysloop_min(0, this_channellist);
         // enable T2 loop.
         delsys_max = delsysloop_max(0, this_channellist);
-        break;
-     case SCAN_CABLE:
-        // if choosen srate is too high for channellist's bandwidth,
-        // fall back to scan all srates. scan loop will skip unsupported srates later.
-        if(dvbc_symbolrate(dvbc_symbolrate_min) > max_dvbc_srate(freq_step(0, this_channellist))) {
-           dvbc_symbolrate_min=0;
-           dvbc_symbolrate_max=17;
-           }
-        // enable C2 loop.
-        //delsys_max = 1;  // enable it later here.
         break;
      default:warning("unsupported delivery system %d.\n", flags.scantype);
   }
@@ -2298,183 +2160,169 @@ static void network_scan(int frontend_fd, int tuning_data) {
         }
      for(mod_parm = modulation_min; mod_parm <= modulation_max; mod_parm++) {
         for(channel=flags.channel_min; channel <= flags.channel_max; channel++) {
-           for(offs = freq_offset_min; offs <= freq_offset_max; offs++) {
-              for(sr_parm = dvbc_symbolrate_min; sr_parm <= dvbc_symbolrate_max; sr_parm++) {                
-                 test.type = flags.scantype;
-                 switch(test.type) {
-                    case SCAN_TERRESTRIAL:
-                       if (delsys_parm != last_delsys) {
-                          delsys = delsys_parm == 0? SYS_DVBT : SYS_DVBT2;
-                          if (delsys==SYS_DVBT && flags.dvbt_type==2) continue;
-                          if (delsys==SYS_DVBT2 && flags.dvbt_type==1) continue;
-                          info("Scanning DVB-%s...\n", delsys == SYS_DVBT?"T":"T2");
-                          last_delsys = delsys_parm;
-                          }
-                       if (use_user_channellist && (!channel_in_userlist(channel))) continue;
-                       f = chan_to_freq(channel, this_channellist);
-                       if (! f) continue; //skip unused channels
-                       if (freq_offset(channel, this_channellist, offs) == -1)
-                          continue; //skip this one
-                       f += freq_offset(channel, this_channellist, offs);                
-                       if (test.bandwidth != (__u32) bandwidth(channel, this_channellist))
-                          info("Scanning %sMHz frequencies...\n", vdr_bandwidth_name(bandwidth(channel, this_channellist)));
-                       test.frequency         = f;
-                       test.inversion         = caps_inversion;
-                       test.bandwidth         = (__u32) bandwidth(channel, this_channellist);
-                       test.coderate          = caps_fec;
-                       test.coderate_LP       = caps_fec;
-                       test.modulation        = caps_qam;
-                       test.transmission      = caps_transmission_mode;
-                       test.guard             = caps_guard_interval;
-                       test.hierarchy         = caps_hierarchy;
-                       test.delsys            = delsys;
-                       test.plp_id            = (flags.override_plp_id<0) ? dvbt2_plp_id : flags.override_plp_id;
-                       time2carrier = carrier_timeout(test.delsys);
-                       time2lock    = lock_timeout   (test.delsys);
-                       if (is_already_scanned_transponder(&test)) {
-                          info("%d (CH%d): skipped (already scanned transponder)\n", freq_scale(f, 1e-3),channel);
-                          continue;
-                          }
-// if (f==506000000) test.frequency = 522000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
-                       info("%d (CH%d): ", freq_scale(f, 1e-3),channel);
-                       break;
-                    case SCAN_CABLE:
-                       f = chan_to_freq(channel, this_channellist);
-                       if (! f)
-                          continue; //skip unused channels
-                       if (freq_offset(channel, this_channellist, offs) == -1)
-                          continue; //skip this one
-                       f += freq_offset(channel, this_channellist, offs);
-                       this_sr = dvbc_symbolrate(sr_parm);
-                       if (this_sr > (uint32_t) max_dvbc_srate(freq_step(channel, this_channellist)))
-                          continue; //skip symbol rates higher than theoretical limit given by bw && roll_off
-                       this_qam = caps_qam;
-                       if (flags.qam_no_auto > 0) {
-                          this_qam = dvbc_modulation(mod_parm);
-                          if (test.modulation != this_qam)
-                             info ("searching QAM%s...\n", vdr_modulation_name(this_qam));
-                          }
-                       test.inversion         = caps_inversion;
-                       test.delsys            = SYS_DVBC_ANNEX_A;
-                       test.modulation        = this_qam;
-                       test.symbolrate        = this_sr;
-                       test.coderate          = caps_fec;
-                       time2carrier = carrier_timeout(test.delsys);
-                       time2lock    = lock_timeout   (test.delsys);
-                       if (f != test.frequency) {
-                          test.frequency = f;
-                          if (is_already_scanned_transponder(&test)) {
-                             info("%d: skipped (already known transponder)\n", freq_scale(f, 1e-3));
-                             continue;
-                             }
-                          info("%d: sr%d ", freq_scale(f, 1e-3) , freq_scale(this_sr, 1e-3)); 
-                          }
-                       else {
-                          if (is_already_scanned_transponder(&test))
-                             continue;
-                          info("sr%d ", freq_scale(this_sr, 1e-3));
-                          }
-                       break;
-                    default:;
-                 } // END: switch (test.type)
-     
-                 info("(time: %s) ", run_time());
-                 if (set_frontend(frontend_fd, ptest) < 0) {
-                    print_transponder(buffer, ptest);
-                    dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
-                    continue;
+           for(offs = freq_offset_min; offs <= freq_offset_max; offs++) {                             
+              test.type = flags.scantype;
+              switch(test.type) {
+                 case SCAN_TERRESTRIAL:
+                    if (delsys_parm != last_delsys) {
+                       delsys = delsys_parm == 0? SYS_DVBT : SYS_DVBT2;
+                       if (delsys==SYS_DVBT && flags.dvbt_type==2) continue;
+                       if (delsys==SYS_DVBT2 && flags.dvbt_type==1) continue;
+                       info("Scanning DVB-%s...\n", delsys == SYS_DVBT?"T":"T2");
+                       last_delsys = delsys_parm;
                     }
-                 get_time(&meas_start);
-                 set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
-                 if (!flags.emulate)
-                    usleep(100000);
-                 ret = 0; lastret = ret;
+                    if (use_user_channellist && (!channel_in_userlist(channel))) continue;
+                    f = chan_to_freq(channel, this_channellist);
+                    if (! f) continue; //skip unused channels
+                    if (freq_offset(channel, this_channellist, offs) == -1)
+                       continue; //skip this one
+                    f += freq_offset(channel, this_channellist, offs);                
+                    if (test.bandwidth != (__u32) bandwidth(channel, this_channellist))
+                       info("Scanning %sMHz frequencies...\n", vdr_bandwidth_name(bandwidth(channel, this_channellist)));
+                    test.frequency         = f;
+                    test.inversion         = caps_inversion;
+                    test.bandwidth         = (__u32) bandwidth(channel, this_channellist);
+                    test.coderate          = caps_fec;
+                    test.coderate_LP       = caps_fec;
+                    test.modulation        = caps_qam;
+                    test.transmission      = caps_transmission_mode;
+                    test.guard             = caps_guard_interval;
+                    test.hierarchy         = caps_hierarchy;
+                    test.delsys            = delsys;
+                    test.plp_id            = (flags.override_plp_id<0) ? dvbt2_plp_id : flags.override_plp_id;
+                    time2carrier = carrier_timeout(test.delsys);
+                    time2lock    = lock_timeout   (test.delsys);
+                    if (is_already_scanned_transponder(&test)) {
+                       info("%d (CH%d): skipped (already scanned transponder)\n", freq_scale(f, 1e-3),channel);
+                       continue;
+                    }
+                    info("%d (CH%d): ", freq_scale(f, 1e-3),channel);
+                    break;
+                 case SCAN_TERRCABLE_ATSC:
+                    switch(mod_parm) {
+                        case ATSC_VSB:
+                            this_atsc = VSB_8;
+                            f = chan_to_freq(channel, ATSC_VSB);
+                            if (!f)
+                               continue;       //skip unused channels
+                            if (freq_offset(channel, ATSC_VSB, offs) == -1)
+                               continue;       //skip this one
+                            f += freq_offset(channel, ATSC_VSB, offs);
+                            break;
+                        case ATSC_QAM:
+                            this_atsc = QAM_256;
+                            f = chan_to_freq(channel, ATSC_QAM);
+                            if (!f)
+                               continue;       //skip unused channels
+                            if (freq_offset(channel, ATSC_QAM, offs) == -1)
+                               continue;       //skip this one
+                            f += freq_offset(channel, ATSC_QAM, offs);
+                            break;
+                        default:
+                            fatal("unknown modulation id\n");
+                    }
+                    test.frequency  = f;
+                    test.inversion  = caps_inversion;
+                    test.modulation = this_atsc;
+                    test.delsys     = atsc_del_sys(this_atsc);
+                    time2carrier    = carrier_timeout(test.delsys);
+                    time2lock       = lock_timeout(test.delsys);
+                    if (is_already_scanned_transponder(&test)) {
+                        info("%d %s: skipped (already known transponder)\n", freq_scale(f, 1e-3), atsc_mod_to_txt(this_atsc));
+                        continue;
+                    }
+                    info("%d: %s", freq_scale(f, 1e-3), atsc_mod_to_txt(this_atsc));
+                    break;
 
-                 // look for some signal.
-                 while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                     }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
+                 default:;
+              } // END: switch (test.type)
+              info("(time: %s) ", run_time());
+              if (set_frontend(frontend_fd, ptest) < 0) {
+                 print_transponder(buffer, ptest);
+                 dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
+                 continue;
+              }
+              get_time(&meas_start);
+              set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+              if (!flags.emulate)
+                 usleep(100000);
+              ret = 0; lastret = ret;
+
+              // look for some signal.
+              while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
+                  ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
+                  if (ret != lastret) {
+                     get_time(&meas_stop);
+                     verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                          elapsed(&meas_start, &meas_stop),
+                          ret & FE_HAS_SIGNAL ?"S":"",
+                          ret & FE_HAS_CARRIER?"C":"",
+                          ret & FE_HAS_LOCK?   "L":"",
+                          ret);
+                     lastret = ret;
+                  }
+                  if (timeout_expired(&timeout) || flags.emulate) break;
+                  usleep(50000);
+              }
+              if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
+                 info("\n");
+                 continue;
+              }
+              verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
+
+              //now, we should get also lock.
+              set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+              while((ret & FE_HAS_LOCK) == 0) {
+                  ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
+                  if (ret != lastret) {
+                     get_time(&meas_stop);
+                     verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                          elapsed(&meas_start, &meas_stop),
+                          ret & FE_HAS_SIGNAL ?"S":"",
+                          ret & FE_HAS_CARRIER?"C":"",
+                          ret & FE_HAS_LOCK?   "L":"",
+                          ret);
+                     lastret = ret;
+                  }
+                  if (timeout_expired(&timeout) || flags.emulate) break;
+                  usleep(50000);
+              }
+              if ((ret & FE_HAS_LOCK) == 0) {
+                 info("\n");
+                 continue;
+              }
+              verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
+
+              if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
+                 verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
+                 continue;
+              }
+
+              t = alloc_transponder(f, test.delsys, test.polarization);
+              t->type = ptest->type;
+              t->source = 0;
+              t->network_name=NULL;
+              init_tp(t);
+
+              copy_fe_params(t, ptest);
+              print_transponder(buffer, t);
+              info("        signal ok:\t%s\n", buffer);
+              switch(ptest->type) {
+                 case SCAN_TERRCABLE_ATSC:
+                    //initial_table_lookup(frontend_fd); // would this work here? Don't know, need Info!
+                    break;
+                 default:                                             
+                    if (initial_table_lookup(frontend_fd)) {
+                      print_transponder(buffer,current_tp);
+                      info("        %s : scanning for services\n",buffer);
+                      scan_tp(); 
+                      if (flags.reception_info==1)
+                         print_signal_info(frontend_fd, current_tp);
+                      AddItem(scanned_transponders, current_tp);
+                    }
+                    break;
                  }
-                 if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                    if (sr_parm == dvbc_symbolrate_max)
-                       info("\n");
-                    continue;
-                    }
-                 verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
-                 //now, we should get also lock.
-                 set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
-
-                 while((ret & FE_HAS_LOCK) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                        }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
-                     }
-                 if ((ret & FE_HAS_LOCK) == 0) {
-                    if (sr_parm == dvbc_symbolrate_max)
-                       info("\n");
-                    continue;
-                    }
-                 verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
-
-                 if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
-                    verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
-                    continue;
-                    }
-
-                 //if (__tune_to_transponder(frontend_fd, ptest,0) < 0)
-                 //   continue;
-// if (f==506000000) test.frequency = 506000000; // TEST FOR duplicates! Do NOT!!! check-in to GIT!!
-                 t = alloc_transponder(f, test.delsys, test.polarization);
-                 t->type = ptest->type;
-                 t->source = 0;
-                 t->network_name=NULL;
-                 init_tp(t);
-
-                 copy_fe_params(t, ptest);
-                 print_transponder(buffer, t);
-                 info("        signal ok:\t%s\n", buffer);
-                 switch(ptest->type) {
-                    case SCAN_TERRCABLE_ATSC:
-                       //initial_table_lookup(frontend_fd); // would this work here? Don't know, need Info!
-                       break;
-                    default:
-                                             
-
-                       if (initial_table_lookup(frontend_fd)) {
-                         print_transponder(buffer,current_tp);
-                         info("        %s : scanning for services\n",buffer);
-                         scan_tp(); 
-                         if (flags.reception_info==1)
-                            print_signal_info(frontend_fd, current_tp);
-                         AddItem(scanned_transponders, current_tp);
-                       }
-
-                      
-                       break;
-                    }
-                 break;
-                 } // END: for sr_parm
+                 break;                
               } // END: for offs
            } // END: for channel       
         } // END: for mod_parm
@@ -2493,7 +2341,6 @@ int main(int argc, char ** argv) {
   int Radio_Services = 1;
   int TV_Services = 1;
   int Other_Services = 0; // 20080106: don't search other services by default.
-//  int ext = 0;
   int retVersion = 0;
   int device_preferred = -1;
   int valid_initial_data = 0;
@@ -2595,7 +2442,6 @@ int main(int argc, char ** argv) {
              break;
      case 'm': // scan mode (t=dvb-t [default], a=atsc)
              if (strcmp(optarg, "t") == 0) scantype = SCAN_TERRESTRIAL;
-//             if (strcmp(optarg, "c") == 0) scantype = SCAN_CABLE;
              if (strcmp(optarg, "a") == 0) scantype = SCAN_TERRCABLE_ATSC;
              if (scantype == SCAN_TERRCABLE_ATSC) {
                 this_channellist = ATSC_VSB;
@@ -2661,18 +2507,6 @@ int main(int argc, char ** argv) {
      case '!': //debug
              verbosity=5;
              break;
-//     case 'i': //specify inversion (DVB-C)
-//             caps_inversion = strtoul(optarg, NULL, 0);
-//             break;
-//     case 'X': //extended DVB-C scan flags (was 'e' in w_scan)
-//             ext = strtoul(optarg, NULL, 0);
-//             if (ext & 0x01)
-//                dvbc_symbolrate_max = 17;
-//             if (ext & 0x02) {
-//                modulation_max = 2;
-//                modulation_flags |= MOD_OVERRIDE_MAX;
-//                }
-//             break;
      default: //undefined
              cleanup();
              bad_usage(argv[0]);
@@ -2710,7 +2544,6 @@ int main(int argc, char ** argv) {
      }
   switch(scantype) {
      case SCAN_TERRCABLE_ATSC:
-     case SCAN_CABLE:
      case SCAN_TERRESTRIAL:
         if (country != NULL) {
            int atsc = ATSC_type;
@@ -2992,54 +2825,6 @@ int main(int argc, char ** argv) {
            }
         else {
            info("FREQ (%.2fMHz ... %.2fMHz)\n", fe_info.frequency_min/1e6, fe_info.frequency_max/1e6);
-           }
-        break;
-     case SCAN_CABLE:
-        //if (fe_info.caps & FE_CAN_2G_MODULATION) {
-        //  info("DVB-C2\n");
-        //  }
-        if (fe_info.caps & FE_CAN_INVERSION_AUTO) {
-           info("INVERSION_AUTO\n");
-           caps_inversion=INVERSION_AUTO;
-           }
-        else {
-           info("INVERSION_AUTO not supported, trying INVERSION_OFF.\n");
-           caps_inversion=INVERSION_OFF;
-           }
-        if (fe_info.caps & FE_CAN_QAM_AUTO) {
-           info("QAM_AUTO\n");
-           caps_qam=QAM_AUTO;
-           }
-        else {
-           info("QAM_AUTO not supported, trying");
-           //print out modulations in the sequence they will be scanned.
-           for(i = modulation_min; i <= modulation_max; i++)
-                 info(" %s", modulation_name(dvbc_modulation(i)));
-           info(".\n");
-           caps_qam=QAM_64;
-           flags.qam_no_auto = 1;
-           }
-        if (fe_info.caps & FE_CAN_FEC_AUTO) {
-           info("FEC_AUTO\n");
-           caps_fec=FEC_AUTO;
-           }
-        else {
-           info("FEC_AUTO not supported, trying FEC_NONE.\n");
-           caps_fec=FEC_NONE;
-           }
-        if (fe_info.frequency_min == 0 || fe_info.frequency_max == 0) {
-           info("This dvb driver is *buggy*: the frequency limits are undefined - please report to linuxtv.org\n");
-           fe_info.frequency_min = 177500000; fe_info.frequency_max = 858000000;
-           }
-        else {
-           info("FREQ (%.2fMHz ... %.2fMHz)\n", fe_info.frequency_min/1e6, fe_info.frequency_max/1e6);
-           }
-        if (fe_info.symbol_rate_min == 0 || fe_info.symbol_rate_max == 0) {
-           info("This dvb driver is *buggy*: the symbol rate limits are undefined - please report to linuxtv.org\n");
-           fe_info.symbol_rate_min = 4000000; fe_info.symbol_rate_max = 7000000;
-           }
-        else {
-           info("SRATE (%.3fMSym/s ... %.3fMSym/s)\n", fe_info.symbol_rate_min/1e6, fe_info.symbol_rate_max/1e6);
            }
         break;
      case SCAN_TERRCABLE_ATSC:
