@@ -85,7 +85,7 @@ int repetition_rate(scantype_t scan_type, enum table_id table) {
               // FIXME: i did not understand fully
               // but i seems to be (1/1 .. [1/25] .. 1/100) sec
               // no hard spec.. :-(
-              return 1;
+              return 3; // changed 20190120 since the old value was too slow for the "Connect" channels. This can make the scan slower.
            case TABLE_NIT_ACT:
            case TABLE_NIT_OTH:
            case TABLE_BAT:

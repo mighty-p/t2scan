@@ -556,8 +556,9 @@ uint16_t carrier_timeout(uint8_t delsys) {
 uint16_t lock_timeout(uint8_t delsys) {
   switch(delsys) {
      case SYS_DVBT:
-     case SYS_DVBT2:
         return 4000;
+     case SYS_DVBT2:
+        return 10000;
      case SYS_DVBC_ANNEX_A:
      case SYS_DVBC_ANNEX_B:
      #if (SYS_DVBC_ANNEX_A != SYS_DVBC_ANNEX_C)
@@ -1481,6 +1482,7 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
   s->segmented = segmented;
   s->timeout = 1; // add 1sec for safety..
   s->timeout += 10 * repetition_rate(flags.scantype, table_id);
+  verbose("Timeout length for table_id %d: %lld seconds.\n",table_id, (long long) s->timeout);
   s->table_id_ext = table_id_ext;
   s->section_version_number = -1;
   s->next = 0;
