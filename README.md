@@ -79,7 +79,7 @@ I don't recommend appending the new channels directly to your channels.conf. t2s
 
 To speed up the scan, there are several simple filter options that you can use if you want to scan only certain channels or if you know that (for example) only DVB-T2 (and no DVB-T) is used in your region. Some examples below:
 
-* DVB Type (`-t`): 
+* DVB-T Type (`-t`): 
   * To scan only for DVB-T2 channels: `t2scan -t2`
   * To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
 * List of channels (`-l`): 
