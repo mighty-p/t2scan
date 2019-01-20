@@ -71,7 +71,7 @@ NOTE: `cmake` allows as `./configure` does, a user defined install prefix. Use `
 
 One of the goals of t2scan is to be as simple to use as possible. Therefore, in most regions it should be sufficient to call t2scan without any parameters and it will find all available TV and radio stations that can be received: `t2scan`
 
-Obviously you can store the result in a file: `./t2scan > channels_new.conf`
+Obviously you can store the result in a file: `t2scan > channels_new.conf`
 
 I don't recommend appending the new channels directly to your channels.conf. t2scan may find duplicate channels or channels you are not interested in. Therefore my recommendation is to copy & paste only those channels that you need.
 
@@ -94,11 +94,11 @@ To speed up the scan, there are several simple filter options that you can use i
 
 #### Overview of all basic options
 
-To see all t2scan basic options see `t2scan -h`. 
+To see all t2scan basic options, use `t2scan -h`. 
 
 ### Expert options
 
-There is also a set of so-called expert options to cover some seldom use cases or to help debug in case of problems. Probably the most common of them are the country settings and the option to set a different DVB-T card, as described below. To see all expert options, see `t2scan -H`.
+There is also a set of so-called expert options to cover some seldom use cases or to help debug in case of problems. Probably the most common of them are the country settings and the option to set a different DVB-T card, as described below. To see all expert options, use `t2scan -H`.
 
 #### Country settings
 
