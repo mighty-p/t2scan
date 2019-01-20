@@ -96,6 +96,7 @@ struct t2scan_flags flags = {
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
   1,                // tuning speed {1 = fast, 2 = medium, 3 = slow}
+  1,                // update transponder parameters with those received from NIT // NOTE: I am researching if this should be better switched on or off
   0,                // default: no deduplicating // NOTE: I may change this after next release
   0,                // default: don't give out information about reception
   1,                // dump_provider, dump also provider name
@@ -1203,13 +1204,14 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
         // we ignore the frequency, but set all other things
         //current_tp->bandwidth = tn.bandwidth;
 
-        current_tp->coderate = tn.coderate;
-        current_tp->coderate_LP = tn.coderate_LP;
-        current_tp->guard = tn.guard;
-        current_tp->transmission = tn.transmission;
-        current_tp->hierarchy = tn.hierarchy;
-        current_tp->modulation = tn.modulation;
-        //plpid
+        if (flags.update_transponder_params) {        
+           current_tp->coderate = tn.coderate;
+           current_tp->coderate_LP = tn.coderate_LP;
+           current_tp->guard = tn.guard;
+           current_tp->transmission = tn.transmission;
+           current_tp->hierarchy = tn.hierarchy;
+           current_tp->modulation = tn.modulation;
+        }
 
 
      }
@@ -2460,7 +2462,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:p:q:rs:t:vA:C:DEFGHI:L:MP:S:VY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:p:q:rs:t:vA:C:DEFGHI:L:MP:S:UVY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2582,6 +2584,9 @@ int main(int argc, char ** argv) {
      case 't': // dvb-t modes to scan (0=all, 1=DVB-T, 2=DVB-T2)
              flags.dvbt_type = strtoul(optarg, NULL, 0);
              if ((flags.dvbt_type > 2)) bad_usage(argv[0]);
+             break;
+     case 'U': // don't update transponder parameters from NIT
+             flags.update_transponder_params = 0;
              break;
      case 'v': //verbose
              verbosity++;
