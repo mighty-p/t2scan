@@ -1,5 +1,9 @@
 ChangeLog:
 ----------
+2019-01-20:
+  - More clean-up.
+  - Make some debugging messages in descriptor parsing less verbose
+  - re-add more code from w_scan for ATSC; ATSC scan still untested (may work or may not)
 2019-01-19:
   - Remove now unused code from w_scan for DVB-C, which is not supported in t2scan
   - Re-add some previously removed code for ATSC; ATSC scan is still completely untested

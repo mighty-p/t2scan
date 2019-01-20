@@ -1025,8 +1025,109 @@ em_static void parse_pmt(const unsigned char * buf, uint16_t section_length, uin
         s->pmt_pid, s->video_pid, msg_buf);
 }
 
+em_static void parse_psip_descriptors(struct service * s, const unsigned char * buf, int len) {
+  unsigned char * b = (unsigned char *) buf;
+  int descriptor_length;
+  
+  hexdump(__FUNCTION__, buf, len);
+  
+  while(len > 0) {
+     descriptor_length = b[1];
+     switch(b[0]) {
+        case atsc_service_location_descriptor:
+           parse_atsc_service_location_descriptor(s, b);
+           break;
+        case atsc_extended_channel_name_descriptor:
+           parse_atsc_extended_channel_name_descriptor(s, b);
+           break;
+        default:
+           warning("unhandled psip descriptor: %02x\n",b[0]);
+           break;
+        }
+     b   += 2 + descriptor_length;
+     len -= 2 + descriptor_length;
+     }
+}
+
 em_static void parse_psip_vct(const unsigned char * buf, uint16_t section_length, uint8_t table_id, uint16_t transport_stream_id) {
-info("XXX parse_psip\n");
+  (void)section_length;
+  (void)table_id;
+  (void)transport_stream_id;
+  int num_channels_in_section = buf[1];
+  int i;
+  int pseudo_id = 0xffff;
+  unsigned char * b = (unsigned char *) buf + 2;
+
+  hexdump(__FUNCTION__, buf, section_length);
+
+  for(i = 0; i < num_channels_in_section; i++) {
+     struct service * s;
+     struct tvct_channel ch = read_tvct_channel(b);
+
+     switch(ch.service_type) {
+        case atsc_analog_television:
+        case atsc_digital_television:   /* ATSC TV */
+        case atsc_radio:                /* ATSC Radio */
+                break;
+        case atsc_data:                 /* ATSC Data */
+        default:
+                continue;
+        }
+
+     if (ch.program_number == 0)
+        ch.program_number = --pseudo_id;
+
+     /* 0x40 << 8 | {0xC8,0xC9} is not 100% correct here,
+      * but for w_scans purpose its easier to handle. ;-)
+      * generally speaking it should be {0xC800,0xC900}.
+      *
+      * ch.carrier_frequency defaults to '0' && non-zero is deprecated,
+      * so dont try to find the transponder by freq, stamp current_transponder only.
+      * May be finding transponder by transport_stream_id from PAT. However, setting
+      * t->transport_stream_id from data in PAT may collide with the current DVB scan algorithm.
+      */
+     current_tp->source = 0x40 << 8 | table_id; 
+     s = find_service(current_tp, ch.program_number);
+     if (!s)
+        s = alloc_service(current_tp, ch.program_number);
+
+     if (s->service_name)
+             free(s->service_name);
+     /* TODO: according to a_65-2009.pdf TABLE 6.4 short_name is 7*16 uimsbf, to be interpreted as UTF16;
+      *       the patch by mk that added atsc needs to be reviewed and compared to atsc specs a63, a65b, a69.
+      *       And as i'm using iconv() anyway, UTF16->users_charset conversation can be added - but carefully,
+      *       mistakes may easily break atsc scan at all.
+      *         --wirbel 20120414
+      */
+     s->service_name = calloc(8,sizeof(unsigned char));
+     /* TODO find a better solution to convert UTF-16 */
+     s->service_name[0] = ch.short_name0;
+     s->service_name[1] = ch.short_name1;
+     s->service_name[2] = ch.short_name2;
+     s->service_name[3] = ch.short_name3;
+     s->service_name[4] = ch.short_name4;
+     s->service_name[5] = ch.short_name5;
+     s->service_name[6] = ch.short_name6;
+     s->service_name[7] = '\0';
+
+     parse_psip_descriptors(s,&b[32],ch.descriptors_length);
+
+     s->logical_channel_number = ch.major_channel_number << 10 | ch.minor_channel_number;
+
+     if (ch.hidden) {
+        s->running = rm_not_running;
+        info("service is not running, pseudo program_number.");
+        }
+     else {
+        s->running = rm_running;
+        info("service is running.");
+        }
+
+     info(" Channel number: %d:%d. Name: '%s'\n",
+          ch.major_channel_number, ch.minor_channel_number,s->service_name);
+
+     b += 32 + ch.descriptors_length;
+     }
 }
 
 em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uint8_t table_id, uint16_t network_id, uint32_t section_flags) {
@@ -1041,15 +1142,13 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
      verbose("        %s : updating network_id -> (%u:%u:%u)\n",
           buffer, current_tp->original_network_id, network_id, current_tp->transport_stream_id);
      current_tp->network_id = network_id;
-     /*check_duplicate_transponders();
-     if (verbosity > 1) list_transponders();*/
-     }
+  }
 
   if (section_length < descriptors_loop_len + 4) {
      warning("section too short: network_id == 0x%04x, section_length == %i, "
              "descriptors_loop_len == %i\n", network_id, section_length, descriptors_loop_len);
      return;
-     }
+  }
   // update network_name
   parse_descriptors(table_id, buf + 2, descriptors_loop_len, current_tp, flags.scantype);
   section_length -= descriptors_loop_len + 4;
