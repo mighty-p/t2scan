@@ -364,7 +364,7 @@ switch (channellist) {
         case DVBT_EU_UHF700:
                 switch (channel) {
                         //case  5 ... 12: return  142500000; // VHF no longer used in Europe.
-                        case 21 ... 49: return  306000000;
+                        case 21 ... 48: return  306000000;
                         default:        return  SKIP_CHANNEL;
                         }
         case DVBT_EU_UHF800:
