@@ -64,32 +64,49 @@ make install
 
 NOTE: `cmake` allows as `./configure` does, a user defined install prefix. Use `cmake -DCMAKE_INSTALL_PREFIX=<YOUR_INSTALL_PREFIX> ..`. If you don't overwrite CMAKE_INSTALL_PREFIX, w_scan will be installed with prefix=/usr.
 
-2 Basic usage
--------------
+2 Usage
+-------
 
-The simplest use case is to just call the program without parameters: `./t2scan`
+## Basic Usage
+One of the goals of t2scan is to be as simple to use as possible. Therefore, in most regions it should be sufficient to call t2scan without any parameters and it will find all available TV and radio stations that can be received: `t2scan`
 
 Obviously you can store the result in a file: `./t2scan > channels_new.conf`
 
-I don't recommend appending the new channels directly to your channels.conf. t2scan
-may find duplicate channels or channels you are not interested in. Therefore my
-recommendation is to copy & paste only those channels that you need.
+I don't recommend appending the new channels directly to your channels.conf. t2scan may find duplicate channels or channels you are not interested in. Therefore my recommendation is to copy & paste only those channels that you need.
 
-To scan only for DVB-T2 channels: `t2scan -t2`
+### Filtering
 
-To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
+To speed up the scan, there are several simple filter options that you can use if you want to scan only certain channels or if you know that (for example) only DVB-T2 (and no DVB-T) is used in your region. Some examples below:
 
-To scan only channels 21 to 49: `t2scan -c21 -C49`
+* To scan only for DVB-T2 channels: `t2scan -t2`
+* To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
+* List of channels: To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
+* Minimum and maximum channels: To scan only channels 21 to 49: `t2scan -c21 -C49`
 
-To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
+### Output options
 
-To exclude encrypted services from output: `t2scan -E`
+* To exclude encrypted services from output: `t2scan -E`
+* To create channel data for xine (instead of vdr): `t2scan -o xine`
+* To mark duplicate channels and services in the output: `t2scan -d`
+* Type of services: To output only radio channels: `t2scan -s r`
+* Type of services: To include TV, radio, and other services in output: `t2scan -s tro`
 
-To create channel data for xine (instead of vdr): `t2scan -o xine`
+### Overview of all basic options
 
-t2scan detects your country from your system settings and uses an appropriate channel list to scan. Use the `-Y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually. Normally this should not be needed since for most countries the generic channel list for Europe is used.
+To see all t2scan basic options see `t2scan -h`. 
 
-For standard t2scan options see `t2scan -h`. For expert options, see `t2scan -H`.
+## Expert options
+
+There is also a set of so-called expert options to cover some seldom use cases or to help debug in case of problems. Probably the most common of them are the country settings and the option to set a different DVB-T card, as described below. To see all expert options, see `t2scan -H`.
+
+### Country settings
+
+Normally, t2scan detects your country from your system settings and uses an appropriate channel list to scan. However, there can be some edge cases where this does not work well: For example your system may be configured for a different country than the one you are currently in, or you may want to receive channels from a neighbor country and it does not work with the default settings (NOTE: you can still give the default settings a try...). Use the `-Y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually.
+
+### Use different DVB-T card
+
+t2scan automatically checks which DVB hardware is available in the system and selects automatically an appropriate DVB-T(2) adapter to use. If you want to override this selection, you can use the `-a` parameter and provide the number of the adapter. This should really be only needed if you have multiple DVB-T(2) adapters in the system and want t2scan to use one specific of them.
+
 
 3 Copyright
 -----------
