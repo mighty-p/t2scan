@@ -34,7 +34,7 @@
  * Copyright: Johannes Stezenbach <js@convergence.de> and others, GPLv2 and LGPL
  * (linuxtv-dvb-apps-1.1.0/utils/scan)
  *
- * Differencies:
+ * Differences:
  * - command line options
  * - detects dvb card automatically
  * - no need for initial tuning data
@@ -2686,7 +2686,7 @@ int main(int argc, char ** argv) {
                 scantype_to_text(scantype),
                 scantype_to_text(flags.scantype));
         scantype = flags.scantype;                        
-        sleep(10); // enshure that user reads warning.
+        sleep(10); // ensure that user reads warning.
         }
      }
   info("scan type %s, channellist %d\n", scantype_to_text(scantype), this_channellist);
