@@ -79,18 +79,25 @@ I don't recommend appending the new channels directly to your channels.conf. t2s
 
 To speed up the scan, there are several simple filter options that you can use if you want to scan only certain channels or if you know that (for example) only DVB-T2 (and no DVB-T) is used in your region. Some examples below:
 
-* To scan only for DVB-T2 channels: `t2scan -t2`
-* To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
-* List of channels: To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
-* Minimum and maximum channels: To scan only channels 21 to 49: `t2scan -c21 -C49`
+* DVB Type (`-t`): 
+  * To scan only for DVB-T2 channels: `t2scan -t2`
+  * To scan only for DVB-T (but not DVB-T2) channels: `t2scan -t1`
+* List of channels (`-l`): 
+  * To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
+* Minimum and maximum channels (`-c`/`-C`): 
+  * To scan only channels 21 to 49: `t2scan -c21 -C49`
 
 #### Output options
 
-* To exclude encrypted services from output: `t2scan -E`
-* To create channel data for xine (instead of vdr): `t2scan -o xine`
-* To mark duplicate channels and services in the output: `t2scan -d`
-* Type of services: To output only radio channels: `t2scan -s r`
-* Type of services: To include TV, radio, and other services in output: `t2scan -s tro`
+* Exclude encrypted (`-E`): 
+  * To exclude encrypted services from output: `t2scan -E`
+* Output type (`-o`): 
+  * To create channel data for xine (instead of vdr): `t2scan -oxine`
+* Mark duplicates (`-d`): 
+  * To mark duplicate channels and services in the output: `t2scan -d`
+* Type of services (`-s`): 
+  * To output only radio services: `t2scan -sr`
+  * To include TV, radio, and other services in output: `t2scan -stro`
 
 #### Overview of all basic options
 
@@ -102,7 +109,7 @@ There is also a set of so-called expert options to cover some seldom use cases o
 
 #### Country settings
 
-Normally, t2scan detects your country from your system settings and uses an appropriate channel list to scan. However, there can be some edge cases where this does not work well: For example your system may be configured for a different country than the one you are currently in, or you may want to receive channels from a neighbor country and it does not work with the default settings (NOTE: you can still give the default settings a try...). Use the `-Y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually.
+Normally, t2scan detects your country from your system settings and uses an appropriate channel list (and for DVB-T2 also the appropriate PLP-ID) to scan. However, there can be some edge cases where this does not work well: For example your system may be configured for a different country than the one you are currently in, or you may want to receive channels from a neighbor country and it does not work with the default settings (NOTE: you can still give the default settings a try...). Use the `-Y` parameter to override the country to be used and the `-L` parameter if you want to set the channel list manually.
 
 #### Use different DVB-T card
 

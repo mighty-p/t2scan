@@ -145,11 +145,11 @@ use device /dev/dvb/adapterN/ [default: auto detect]
 .B \-S N
 Tuning speed (multiply tuning timeouts), increasing may help if device tunes slowly or has bad reception.
 .br
-1 = fastest (2 sec for carrier, 4 sec for lock) [default],
+1 = default (2 sec for carrier, 4 sec for lock [DVB-T2: 10 sec]),
 .br
-2 = double (4 sec for carrier, 8 sec for lock),
+2 = double (4 sec for carrier, 8 sec for lock [DVB-T2: 20 sec]),
 .br
-3 = triple (6 sec for carrier, 12 sec for lock),
+3 = triple (6 sec for carrier, 12 sec for lock [DVB-T2: 30 sec]),
 .br
 etc...
 .TP
@@ -179,26 +179,38 @@ specify ATSC scan type
 3 = both, cable and terrestrial.
 .SH "EXAMPLES"
 .TP
-scan aerial (DVB-T/T2):
+scan with default parameters (works in most scenarios):
 .B t2scan
+.TP
+DVB-T type (-t): scan DVB-T2 only:
+.B t2scan -t2
+.TP
+DVB-T type (-t): scan DVB-T only (no DVB-T2):
+.B t2scan -t1
+.TP
+List of channels (-l): scan aerial, but only channels 21, 24, and 27:
+.B t2scan -l21,24,27
+.TP
+Minimum and maximum channel (-c, -C): scan aerial from channel 21 to channel 32:
+.B t2scan -c21 -C32
 .TP
 scan aerial (DVB-T/T2), exclude encrypted services from output:
 .B t2scan -E
 .TP
-scan aerial (DVB-T2 only):
-.B t2scan -t 2
+output format (-o): use output format vlc:
+.B t2scan -ovlc
 .TP
-scan aerial from channel 21 to channel 32:
-.B t2scan -c 21 -C 32
+output format (-o): use output format zap/czap/xine:
+.B t2scan -oxine
 .TP
-scan aerial, but only channels 21, 24, and 27:
-.B t2scan -l 21,24,27
+mark duplicate channels and services in the output:
+.B t2scan -d
 .TP
-use output format vlc:
-.B t2scan [ OTHER OPTIONS ] -o vlc
+Type of services (-s): output only radio services:
+.B t2scan -sr
 .TP
-use output format zap/czap/xine:
-.B t2scan [ OTHER OPTIONS ] -o xine
+Type of services (-s): output TV, radio and other services:
+.B t2scan -stro
 .SH "REPORTING BUGS"
 see README file from source code package.
 .SH "AUTHOR"
