@@ -2,6 +2,7 @@ t2scan has been successfully tested with the following frontend hardware:
 
 - Silicon Labs Si2168 (used by many cards, amongst others by the "DVBSky ​T9580 V3")
 - ​TurboSight TBS 5520SE DVB-T/T2/C/C2/ISDB-T​ (card "TBS 5520 SE")
+- Panasonic MN88473 (e.g. used by Astrometa DVB-T2 USB-Stick)
 
 NOTE: Although t2scan runs or ran successfully for somebody with the hardware in this list, it does not 
 automatically mean that it will run flawlessly for you. There are simply too many hardware combinations and
