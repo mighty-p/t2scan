@@ -1,7 +1,7 @@
 ChangeLog:
 ----------
 2019-03-17:
-  - bump version number to 20190317 for 0.5 release
+  - bump version number to 20190317 for 0.5 release and to 20190318 for post-0.5 release work
 2019-01-20:
   - More clean-up.
   - Make some debugging messages in descriptor parsing less verbose
