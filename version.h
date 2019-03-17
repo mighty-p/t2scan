@@ -1,6 +1,6 @@
 /* AUTOMATICALLY GENERATED - DO NOT EDIT MANUALLY */
 #ifndef W_SCAN_VERSION_H
 #define W_SCAN_VERSION_H
-uint version=20190106;
+uint version=20190317;
 #endif
 
