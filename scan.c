@@ -2848,8 +2848,8 @@ int main(int argc, char ** argv) {
   fe_status_t fe_status;
   EMUL(em_status, &fe_status)
   if (ioctl(frontend_fd, FE_READ_STATUS, &fe_status) == -1) {
-     cleanup();
-     fatal("FE_READ_STATUS failed: %d %s\n", errno, strerror(errno));
+     //cleanup();
+     info("FE_READ_STATUS failed: %d %s\n", errno, strerror(errno));
   }
 
 
