@@ -1217,7 +1217,6 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
            current_tp->transmission = tn.transmission;
            current_tp->hierarchy = tn.hierarchy;
            current_tp->modulation = tn.modulation;
-           current_tp->plp_id = tn.plp_id;
         }
 
 
