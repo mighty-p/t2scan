@@ -101,6 +101,7 @@ int choose_country (const char * country,
         switch(txt_to_country(country)) {
 
                 case    AT:     //      AUSTRIA
+                case    IT:     //      ITALY
                         *dvbt2_plp_id=1; 
                 case    BE:     //      BELGIUM
                 case    CH:     //      SWITZERLAND
@@ -117,7 +118,6 @@ int choose_country (const char * country,
                 case    HK:     //      HONG KONG
                 case    IL:     //      ISRAEL
                 case    IS:     //      ICELAND
-                case    IT:     //      ITALY
                 case    LU:     //      LUXEMBOURG
                 case    LV:     //      LATVIA
                 case    NL:     //      NETHERLANDS

@@ -116,7 +116,7 @@ static unsigned int modulation_max = 1;         // initialization of modulation 
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
 static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T with UHF channels below 790 MHz.
-static int dvbt2_plp_id = 0;                    // PLP ID to be used in DVB-T2 single-PLP (SISO) mode (differs by county, can be overridden with -p parameter)
+static int dvbt2_plp_id = 0;                    // PLP ID to be used in DVB-T2 single-PLP (SISO) mode (differs by country, can be overridden with -p parameter)
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                
 static unsigned int serv_select = 3;            // 20080106: radio and tv as default (no service/other). 20090227: flag type vars shouldnt be signed. 
@@ -433,6 +433,7 @@ static const char * ext_opts = "%s expert help\n"
   "       -p <N>, --plp <N>\n"
   "               use the given PLP ID for scanning\n"
   "               Default: 0 for most countries\n"
+  "               Setting this to -1 activates auto-detection\n"
   "               NOTE: For German DVB-T2, some additional \"connect\" channels\n"
   "                     are found with PLP ID 1.\n"
   "                     For Austria currently all channels are under PLP ID 1.\n"
@@ -1207,6 +1208,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
 
         // we ignore the frequency, but set all other things
         //current_tp->bandwidth = tn.bandwidth;
+        if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = tn.plp_id;
 
         if (flags.update_transponder_params) {        
            current_tp->coderate = tn.coderate;
@@ -1215,6 +1217,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
            current_tp->transmission = tn.transmission;
            current_tp->hierarchy = tn.hierarchy;
            current_tp->modulation = tn.modulation;
+           current_tp->plp_id = tn.plp_id;
         }
 
 
@@ -2565,6 +2568,7 @@ int main(int argc, char ** argv) {
              break;
      case 'p': //plp id to be used
              flags.override_plp_id = strtoul(optarg, NULL, 0);
+             if (flags.override_plp_id==-1) flags.override_plp_id = NO_STREAM_ID_FILTER;
              break;
      case 'P': //ATSC PSIP scan
              no_ATSC_PSIP = 1;

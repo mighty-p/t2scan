@@ -1,4 +1,4 @@
-t2scan has been successfully tested with the following frontend hardware:
+t2scan has been successfully tested with the following frontend hardware or cards:
 
 - DiBcom 7000PC ("Hauppauge Nova-T Stick")
 - Panasonic MN88472 ("Microsoft Xbox One Digital TV Tuner")
@@ -6,6 +6,7 @@ t2scan has been successfully tested with the following frontend hardware:
 - Silicon Labs Si2168 (used by many cards, amongst others by the "DVBSky ​T9580 V3")
 - ​TurboSight TBS 5520SE DVB-T/T2/C/C2/ISDB-T​ ("TBS 5520 SE")
 - TurboSight TBS 6522 DVB-S/S2/DVB-T/T2/C ("TBS 6522")
+- "Hauppauge WinTV-quadHD"
 
 NOTE: Although t2scan runs or ran successfully for somebody with the hardware in this list, it does not 
 automatically mean that it will run flawlessly for you. There are simply too many hardware combinations and
