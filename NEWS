@@ -1,5 +1,8 @@
 ChangeLog:
 ----------
+2020-04-23:
+  - Added support for autodetection of PLP ID (use -p-1)
+  - Set default PLP ID for Italy to 1
 2019-03-17:
   - bump version number to 20190317 for 0.5 release and to 20190318 for post-0.5 release work
 2019-01-20:
