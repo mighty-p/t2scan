@@ -188,7 +188,7 @@ struct transponder {
   unsigned                   type                        :5; /* 3bit + 2bit byte_align                              28    */
   uint32_t                   source;                         /*                                                     29..32*/
   uint16_t                   system_id;                      /* DVB-C2, DVB-T2 system_id                            33..34*/
-  uint8_t                    plp_id;                         /* DVB-C2, DVB-T2                                      35    */
+  uint32_t                   plp_id;                         /* DVB-C2, DVB-T2                                      35    */
   uint8_t                    data_slice_id;                  /* DVB-C2                                              36    */
   /*---------------------------- below is not copied by 'copy_fe_params' -------------------------------------------------*/
   uint8_t private_from_here; 

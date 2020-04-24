@@ -91,7 +91,7 @@ struct t2scan_flags flags = {
   0,                // scan DVB-T and DVB-T2 if type is t
   0,                // default lowest channel to scan
   133,              // default highest channel to scan
-  -1,               // user-defined plp id to be used for DVB-T2
+  -2,               // user-defined plp id to be used for DVB-T2
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
@@ -2298,7 +2298,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     test.guard             = caps_guard_interval;
                     test.hierarchy         = caps_hierarchy;
                     test.delsys            = delsys;
-                    test.plp_id            = (flags.override_plp_id<0) ? dvbt2_plp_id : flags.override_plp_id;
+                    test.plp_id            = (flags.override_plp_id<-1) ? dvbt2_plp_id : flags.override_plp_id;
                     time2carrier = carrier_timeout(test.delsys);
                     time2lock    = lock_timeout   (test.delsys);
                     if (is_already_scanned_transponder(&test)) {
