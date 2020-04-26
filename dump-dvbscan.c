@@ -106,7 +106,7 @@ void dvbscan_dump_tuningdata (  FILE *f,
                         fprintf (f, "%4s ", terr_guard_to_txt(t->guard));
                         fprintf (f, "%4s",  terr_hierarchy_to_txt(t->hierarchy));
                         if (t->plp_id)
-                           fprintf (f, " %u", t->plp_id);
+                           fprintf (f, " %d", t->plp_id);
                         break;
                 case SCAN_SATELLITE:
                         fprintf (f, "%-2s ", sat_delivery_system_to_txt(t->delsys));

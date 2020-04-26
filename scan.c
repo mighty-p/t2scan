@@ -1208,7 +1208,6 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
 
         // we ignore the frequency, but set all other things
         //current_tp->bandwidth = tn.bandwidth;
-        if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = tn.plp_id;
 
         if (flags.update_transponder_params) {        
            current_tp->coderate = tn.coderate;
@@ -1217,8 +1216,10 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
            current_tp->transmission = tn.transmission;
            current_tp->hierarchy = tn.hierarchy;
            current_tp->modulation = tn.modulation;
+           if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = tn.plp_id;
+        } else {
+           if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = -1;
         }
-
 
      }
      

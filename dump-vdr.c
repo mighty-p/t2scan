@@ -230,7 +230,7 @@ void dump_param_vdr(FILE * f, struct transponder * t, struct t2scan_flags * flag
                 vdrprint(f, t->transmission              , TRANSMISSION_MODE_AUTO , "T", vdr_transmission_mode_name(t->transmission));
                 vdrprint(f, t->hierarchy                 , HIERARCHY_AUTO         , "Y", vdr_hierarchy_name(t->hierarchy));
                 if (t->delsys == SYS_DVBT2)
-                   fprintf (f, "P%u", t->plp_id);
+                   fprintf (f, "P%d", t->plp_id);
                 fprintf (f, ":T:27500:");
                 break;
 
