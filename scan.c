@@ -1236,11 +1236,11 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
        tn.cells = &tn._cells;
        NewList(tn.cells, "tn_cells");
        parse_descriptors(table_id, buf + 6, descriptors_loop_len, &tn, flags.scantype);
-     }
+     } */
      
      section_length -= descriptors_loop_len + 6;
      buf            += descriptors_loop_len + 6;
-  }*/
+  }
 
 }
 
