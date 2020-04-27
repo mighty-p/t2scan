@@ -1178,7 +1178,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
 
      // only use the NIT entry for current TSID, NID to get ONID and exact tuning data
      if ((current_tp->type != SCAN_TERRESTRIAL) || ((transport_stream_id == current_tp->transport_stream_id) && (network_id == current_tp->network_id))) {
-
+        verbose("        section is for currently received network.\n");
         memset(&tn, 0, sizeof(tn));
         tn.type                = current_tp->type;
         tn.network_PID         = current_tp->network_PID;
@@ -1221,11 +1221,26 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
            if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = -1;
         }
 
+     }/* else {
+       verbose("        section is for a network on different transponder.\n");
+       memset(&tn, 0, sizeof(tn));
+       tn.type                = current_tp->type;
+       tn.network_PID         = current_tp->network_PID;
+       tn.network_id          = network_id;
+       tn.original_network_id = original_network_id;
+       tn.transport_stream_id = transport_stream_id;
+       tn.network_name = NULL;
+
+       tn.services = &tn._services;
+       NewList(tn.services, "tn_services");
+       tn.cells = &tn._cells;
+       NewList(tn.cells, "tn_cells");
+       parse_descriptors(table_id, buf + 6, descriptors_loop_len, &tn, flags.scantype);
      }
      
      section_length -= descriptors_loop_len + 6;
      buf            += descriptors_loop_len + 6;
-  }
+  }*/
 
 }
 
