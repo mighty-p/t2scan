@@ -115,7 +115,7 @@ static unsigned int modulation_min = 0;         // initialization of modulation 
 static unsigned int modulation_max = 1;         // initialization of modulation loop. QAM256 if FE_QAM
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
-static int this_channellist = DVBT_EU_UHF800;   // t2scan uses by default DVB-T with UHF channels below 790 MHz.
+static int this_channellist = DVBT_EU_VHFUHF;   // t2scan uses by default DVB-T with all VHF and UHF channels
 static int dvbt2_plp_id = 0;                    // PLP ID to be used in DVB-T2 single-PLP (SISO) mode (differs by country, can be overridden with -p parameter)
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                

@@ -1,5 +1,8 @@
 ChangeLog:
 ----------
+2020-04-30:
+  - Set default channel list to all VHF and UHF channels 
+    (for AT, BE, CH, LU, NL, FR, GB only UHF channels 21-60 will be scanned by default) 
 2020-04-23:
   - Added support for autodetection of PLP ID (use -p-1)
   - Set default PLP ID for Italy to 1
