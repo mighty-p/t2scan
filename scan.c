@@ -406,7 +406,7 @@ static const char * ext_opts = "%s expert help\n"
   "       -L <N>, --channel-list <N>\n"
   "               one of the following generic channel lists for Europe:\n"
   "                  0: Europe, UHF channels below 790 MHz\n"
-  "                     [default for AT, BE, CH, DE, FR, GB, LU, NL]
+  "                     [default for AT, BE, CH, DE, FR, GB, LU, NL]\n"
   "                  1: Europe, UHF channels below 700 MHz\n"
   "                  2: Europe, all UHF channels\n"
   "                  3: Europe, all VHF and UHF channels\n"
