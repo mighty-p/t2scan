@@ -15,7 +15,7 @@ t2scan vs w_scan:
 - Added a parameter to determing the DVB-T type for scan ("-t1" for DVB-T only, "-t2" for DVB-T2 only). This makes the scan much faster if the user knows that only one DVB-T type is used in the user's region. The option for the tuning speed ("-t" in w_scan) has been changed to "-S".
 - Added a parameter to determine the lowest channel to scan ("-c") and the highest channel to scan ("-C"). This makes the scan much faster if the user knows which channels are used in the user's region.
 - Only DVB-T/T2 (ATSC available, but untested), support for DVB-C and DVB-S/S2 has been removed.
-- Ability to scan other PLP IDs than only PLP ID 0 for DVB-T2. Depending on country, a default PLP may be preselected (e.g. for Austria: PLP 1, for most other countries: PLP 0). This can be overriden with "-p" parameter. E.g. using "-p1" allows to find the so-called "connect" channels in Germany. NOTE: Currently t2scan allows only to scan for a single PLP at once. However, you can set "-p-1" for auto-detection of the PLP (then usually the stream in the first PLP used in a channel is found).
+- Ability to scan other PLP IDs than only PLP ID 0 for DVB-T2. Use "-p" parameter to specify a comma-separated list of PLP IDs to be scanned (in that order). The special value -1 auto-detects the first PLP. There is a mechanism to avoid auto-detected PLPs from being scanned again and to update the PLP ID of services if the one in the T2 delivery descriptor of the auto-detected PLP was wrong. Default value for "-p" is -1,0,1 for most countries (for Austria and Italy: -1,1,0; for Russia: -1,1,2,3).
 - Removed several options, trying to keep this tool very simple.
 
 w_scan vs scan:
@@ -86,6 +86,9 @@ To speed up the scan, there are several simple filter options that you can use i
   * To scan only the channels 21, 24, 27: `t2scan -l21,24,27`
 * Minimum and maximum channels (`-c`/`-C`): 
   * To scan only channels 21 to 49: `t2scan -c21 -C49`
+* DVB-T2 PLP IDs (`-p`):
+  * To scan without PLP ID filter (auto-detects first PLP): `t2scan -p-1`
+  * To scan PLP IDs 0, 1 and 2: `t2scan -p0,1,2`
 
 #### Output options
 
@@ -137,7 +140,7 @@ on the Github project page: https://github.com/mighty-p/t2scan
 - Rolf Ahrenberg for doing DVB-T/T2 tests and suggestions to improve w_scan
 - "GTC" for providing a patch to fix the tuning timeouts code
 - Andreas Mikula for finding out that Austria uses PLP ID 1
-- "HelmutB" for informing me about Austria using PLP ID 1, for testing and advice
+- "HelmutB" for informing me about Austria using PLP ID 1, for testing and advice about PLP IDs.
 - "clausmuus" for helping me test why scanning on some devices has not worked reliably
 - "highrgb" for testing
 - "motze" for testing and for finding out that Italy uses PLP ID 1 for their DVB-T2 test multiplex

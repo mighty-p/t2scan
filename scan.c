@@ -116,16 +116,22 @@ static unsigned int modulation_max = 1;         // initialization of modulation 
 static unsigned int freq_offset_min = 0;        // initialization of freq offset loop. 0 == offset (0), 1 == offset(+), 2 == offset(-), 3 == offset1(+), 4 == offset2(+)
 static unsigned int freq_offset_max = 4;        // initialization of freq offset loop.
 static int this_channellist = DVBT_EU_VHFUHF;   // t2scan uses by default DVB-T with all VHF and UHF channels
-static int dvbt2_plp_id = 0;                    // PLP ID to be used in DVB-T2 single-PLP (SISO) mode (differs by country, can be overridden with -p parameter)
 static unsigned int ATSC_type = ATSC_VSB;       // 20090227: flag type vars shouldnt be signed. 
 static unsigned int no_ATSC_PSIP = 0;           // 20090227: initialization was missing, signed -> unsigned                
 static unsigned int serv_select = 3;            // 20080106: radio and tv as default (no service/other). 20090227: flag type vars shouldnt be signed. 
 static int user_channellist[200];               // for user channel list given by parameter -l
 static bool use_user_channellist = false;       // for user channel list given by parameter -l
+static int plplist[256];                        // list of plp IDs to scan
+static int plplist_length = 0;                  // length of list of plp IDs to scan
+static int user_plplist[256];                   // for user list of plp IDs to scan (-p)
+static int user_plplist_length = 0;             // length of user list of plp IDs to scan (-p)
+static bool use_user_plplist = false;           // for user list of plp IDs to scan (-p)
+
 
 struct timespec start_time = { 0, 0 };
 
 static bool bandwidth_auto                              = true;
+static bool multistream                                 = true;
 static enum fe_spectral_inversion caps_inversion        = INVERSION_AUTO;
 static enum fe_code_rate caps_fec                       = FEC_AUTO;
 static enum fe_modulation caps_qam                      = QAM_AUTO;
@@ -148,7 +154,6 @@ enum __output_format {
 static enum __output_format output_format = OUTPUT_VDR;
 
 cList _scanned_transponders, * scanned_transponders = &_scanned_transponders;
-cList _new_transponders, * new_transponders = &_new_transponders;
 static struct transponder * current_tp;
 
 static void setup_filter(struct section_buf * s, const char * dmx_devname, int pid, int table_id, int table_id_ext,
@@ -163,9 +168,7 @@ static void copy_fe_params(struct transponder * dest, struct transponder * sourc
 // Further complication: Different NITs on one satellite sometimes list the same TP with slightly different
 // frequencies, so we have to search within some bandwidth.
 struct transponder * alloc_transponder(uint32_t frequency, unsigned delsys, uint8_t polarization) {
-  struct transponder * tn;
   struct transponder * t = calloc(1, sizeof(* t));
-  bool   known = false;
   char   name[20];
   struct cell* cell;
 
@@ -205,23 +208,9 @@ struct transponder * alloc_transponder(uint32_t frequency, unsigned delsys, uint
 
   t->network_name = NULL;  
 
-  if (frequency > 0) { //dont check, if we dont yet know freq.
-     for(tn = new_transponders->first; tn; tn = tn->next) {
-        if (tn->delsys != t->delsys)
-           continue;
-        if (tn->frequency == frequency) {
-           if ((t->type == SCAN_SATELLITE) && (polarization != tn->polarization))
-              continue;
-           known = true;
-           break;
-           }
-        }
-     }
-
-  if (known == false) {
-     AddItem(new_transponders, t);
-     }
   return t;
+
+
 }
 
 const char * scantype_to_text(scantype_t scantype) {
@@ -416,10 +405,12 @@ static const char * ext_opts = "%s expert help\n"
   ".................Filter Options..........\n"
   "       -L <N>, --channel-list <N>\n"
   "               one of the following generic channel lists for Europe:\n"
-  "                  0: Europe, UHF channels below 790 MHz [default]\n"
+  "                  0: Europe, UHF channels below 790 MHz\n"
+  "                     [default for AT, BE, CH, DE, FR, GB, LU, NL]
   "                  1: Europe, UHF channels below 700 MHz\n"
   "                  2: Europe, all UHF channels\n"
   "                  3: Europe, all VHF and UHF channels\n"
+  "                     [default for most countries]\n"
   "                  4: France, specific list with offsets\n"
   "                  5: GB, specific list with offsets\n"
   "                  6: Australia\n"
@@ -430,13 +421,13 @@ static const char * ext_opts = "%s expert help\n"
   "               exclude duplicate services from output\n"
   "               NOTE: If a service is found multiple times, this will\n"
   "                     only consider the instance found last!\n"
-  "       -p <N>, --plp <N>\n"
-  "               use the given PLP ID for scanning\n"
-  "               Default: 0 for most countries\n"
-  "               Setting this to -1 activates auto-detection\n"
-  "               NOTE: For German DVB-T2, some additional \"connect\" channels\n"
-  "                     are found with PLP ID 1.\n"
-  "                     For Austria currently all channels are under PLP ID 1.\n"
+  "       -p <list of PLP IDs>, --plp <list of PLP IDs>\n"
+  "               use the given comma-separated PLP IDs for scanning\n"
+  "               Default: country-depending; -1,0,1 for most countries\n"
+  "               The value -1 finds the first PLP on the frequency.\n"
+  "               NOTE: In Germany, most DVB-T2 services are on PLP ID 0, \n"
+  "                     some additional \"connect\" channels are on PLP ID 1.\n"
+  "                     For Austria, in most regions channels are on PLP ID 1.\n"
   ".................General.................\n"
   "       -U\n"
   "               don't update transponder parameters with the data in the NIT.\n"
@@ -1986,16 +1977,36 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
   return 0;
 }
 
-/* identify wether tn is already in list of new transponders */
-static int is_already_scanned_transponder(struct transponder * tn) {
+/* identify if tn is already in list of new transponders and needs PLP update */
+static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
   struct transponder * t;
+  for(t = scanned_transponders->first; t; t = t->next) {
+     if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {   
+        if (t->original_network_id == tn->original_network_id && t->network_id == tn->network_id && t->transport_stream_id == tn->transport_stream_id) {
+           info("        same network already found on CH");
+           if (tn->plp_id != NO_STREAM_ID_FILTER && tn->plp_id>=0) {
+              info(" (PLP updated from %d to %d)",t->plp_id, tn->plp_id);
+              t->plp_id = tn->plp_id;
+           }
+           info("\n");
+           return 1;
+        }
+     }
+  }
+  return 0;
+}
 
+
+
+
+/* identify wether tn is already in list of new transponders */
+static int is_already_scanned_transponder_plp(struct transponder * tn, int test_plp) {
+  struct transponder * t;
   for(t = scanned_transponders->first; t; t = t->next) {
      switch(tn->type) {
         case SCAN_TERRESTRIAL:
            if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {
-              //return (t->source >> 8) == 64;
-              return 1;
+              return (test_plp)? (t->plp_id == tn->plp_id) : 1;
            }
            break;
         case SCAN_TERRCABLE_ATSC:
@@ -2008,6 +2019,10 @@ static int is_already_scanned_transponder(struct transponder * tn) {
         }
      }
   return 0;
+}
+
+static int is_already_scanned_transponder(struct transponder * tn) {
+  return is_already_scanned_transponder_plp(tn, 0);
 }
 
 static int find_duplicate_transponders(FILE * dest, struct transponder * tn, struct transponder * ts) {
@@ -2240,6 +2255,11 @@ static void network_scan(int frontend_fd, int tuning_data) {
   uint32_t f = 0, channel, mod_parm, offs;
   uint8_t delsys_parm, delsys = 0, last_delsys = 255;
   uint16_t ret = 0, lastret = 0;
+  int current_plp = -1;
+  int plp_i = 0;
+  int* my_plplist;
+  int my_plplist_length = 0;
+  bool no_signal_on_freq = false;
   struct transponder * t = NULL, * ptest;
   struct transponder test;
   char buffer[128];
@@ -2272,6 +2292,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
         delsys_min = delsysloop_min(0, this_channellist);
         // enable T2 loop.
         delsys_max = delsysloop_max(0, this_channellist);
+
         break;
      default:warning("unsupported delivery system %d.\n", flags.scantype);
   }
@@ -2314,7 +2335,6 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     test.guard             = caps_guard_interval;
                     test.hierarchy         = caps_hierarchy;
                     test.delsys            = delsys;
-                    test.plp_id            = (flags.override_plp_id<-1) ? dvbt2_plp_id : flags.override_plp_id;
                     time2carrier = carrier_timeout(test.delsys);
                     time2lock    = lock_timeout   (test.delsys);
                     if (is_already_scanned_transponder(&test)) {
@@ -2361,87 +2381,197 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  default:;
               } // END: switch (test.type)
-              info("(time: %s) ", run_time());
-              if (set_frontend(frontend_fd, ptest) < 0) {
-                 print_transponder(buffer, ptest);
-                 dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
-                 continue;
-              }
-              get_time(&meas_start);
-              set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
-              if (!flags.emulate)
-                 usleep(100000);
-              ret = 0; lastret = ret;
+              if (flags.scantype==SCAN_TERRESTRIAL && delsys == SYS_DVBT2) {
+                 no_signal_on_freq = false; // first assume the frequency can be used
+                 // plp loop
+                 if (use_user_plplist) {
+                    my_plplist = &user_plplist;
+                    my_plplist_length = user_plplist_length;
+                 } else {
+                    my_plplist = &plplist;
+                    my_plplist_length = plplist_length;
+                 }
+                 for (plp_i = 0; plp_i < my_plplist_length; plp_i++) {
+                   current_plp = my_plplist[plp_i];
+                   // check if plp id = -1 and this is supported
+                   if (current_plp==-1 && !multistream) continue;
+                   if (no_signal_on_freq) continue;
+                   test.plp_id = (current_plp==-1) ? NO_STREAM_ID_FILTER : current_plp;
+                   info("(time: %s) ", run_time());
+                   info("\nplp %d: ",current_plp);
+                   if (is_already_scanned_transponder_plp(&test, 1)) {
+                       info("        skipped (already scanned PLP)\n");
+                       continue;
+                   }
+                   if (set_frontend(frontend_fd, ptest) < 0) {
+                    print_transponder(buffer, ptest);
+                    dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
+                    continue;
+                   }
+                 get_time(&meas_start);
+                 set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 if (!flags.emulate)
+                    usleep(100000);
+                 ret = 0; lastret = ret;
 
-              // look for some signal.
-              while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                  ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
-                  if (ret != lastret) {
-                     get_time(&meas_stop);
-                     verbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                          elapsed(&meas_start, &meas_stop),
-                          ret & FE_HAS_SIGNAL ?"S":"",
-                          ret & FE_HAS_CARRIER?"C":"",
-                          ret & FE_HAS_LOCK?   "L":"",
-                          ret);
-                     lastret = ret;
-                  }
-                  if (timeout_expired(&timeout) || flags.emulate) break;
-                  usleep(50000);
-              }
-              if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
-                 info("\n");
-                 continue;
-              }
-              verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
+                 // look for some signal.
+                 while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
+                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
+                     if (ret != lastret) {
+                        get_time(&meas_stop);
+                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                             elapsed(&meas_start, &meas_stop),
+                             ret & FE_HAS_SIGNAL ?"S":"",
+                             ret & FE_HAS_CARRIER?"C":"",
+                             ret & FE_HAS_LOCK?   "L":"",
+                             ret);
+                        lastret = ret;
+                     }
+                     if (timeout_expired(&timeout) || flags.emulate) break;
+                     usleep(50000);
+                 }
+                 if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
+                    info("        no signal\n");
+                    no_signal_on_freq = true;
+                    continue;
+                 }
+                 verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
-              //now, we should get also lock.
-              set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
-              while((ret & FE_HAS_LOCK) == 0) {
-                  ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
-                  if (ret != lastret) {
-                     get_time(&meas_stop);
-                     verbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                          elapsed(&meas_start, &meas_stop),
-                          ret & FE_HAS_SIGNAL ?"S":"",
-                          ret & FE_HAS_CARRIER?"C":"",
-                          ret & FE_HAS_LOCK?   "L":"",
-                          ret);
-                     lastret = ret;
-                  }
-                  if (timeout_expired(&timeout) || flags.emulate) break;
-                  usleep(50000);
-              }
-              if ((ret & FE_HAS_LOCK) == 0) {
-                 info("\n");
-                 continue;
-              }
-              verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
+                 //now, we should get also lock.
+                 set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 while((ret & FE_HAS_LOCK) == 0) {
+                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
+                     if (ret != lastret) {
+                        get_time(&meas_stop);
+                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                             elapsed(&meas_start, &meas_stop),
+                             ret & FE_HAS_SIGNAL ?"S":"",
+                             ret & FE_HAS_CARRIER?"C":"",
+                             ret & FE_HAS_LOCK?   "L":"",
+                             ret);
+                        lastret = ret;
+                     }
+                     if (timeout_expired(&timeout) || flags.emulate) break;
+                     usleep(50000);
+                 }
+                 if ((ret & FE_HAS_LOCK) == 0) {
+                    info("        no data\n");
+                    continue;
+                 }
+                 verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
 
-              if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
-                 verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
-                 continue;
-              }
+                 if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
+                    verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
+                    continue;
+                 }
 
-              t = alloc_transponder(f, test.delsys, test.polarization);
-              t->type = ptest->type;
-              t->source = 0;
-              t->network_name=NULL;
-              init_tp(t);
+                 t = alloc_transponder(f, test.delsys, test.polarization);
+                 t->type = ptest->type;
+                 t->source = 0;
+                 t->network_name=NULL;
+                 init_tp(t);
 
-              copy_fe_params(t, ptest);
-              print_transponder(buffer, t);
-              info("        signal ok:\t%s\n", buffer);
+                 copy_fe_params(t, ptest);
+                 print_transponder(buffer, t);
+                 info("        signal ok:\t%s\n", buffer);
                                                       
-              if (initial_table_lookup(frontend_fd)) {
-                print_transponder(buffer,current_tp);
-                info("        %s : scanning for services\n",buffer);
-                scan_tp(); 
-                if (flags.reception_info==1)
-                   print_signal_info(frontend_fd, current_tp);
-                AddItem(scanned_transponders, current_tp);
-              }              
-              break;                
+                 if (initial_table_lookup(frontend_fd)) {
+                   print_transponder(buffer,current_tp);
+                   if (!is_already_scanned_transponder_t2_samefreq(current_tp)) {
+                      info("        %s : scanning for services\n",buffer);
+                      scan_tp(); 
+                      if (flags.reception_info==1)
+                         print_signal_info(frontend_fd, current_tp);
+                      AddItem(scanned_transponders, current_tp);
+                    }
+                  }                
+               }
+
+
+
+              } else {              
+                 info("(time: %s) ", run_time());
+                 if (set_frontend(frontend_fd, ptest) < 0) {
+                    print_transponder(buffer, ptest);
+                    dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
+                    continue;
+                 }
+                 get_time(&meas_start);
+                 set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 if (!flags.emulate)
+                    usleep(100000);
+                 ret = 0; lastret = ret;
+
+                 // look for some signal.
+                 while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
+                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
+                     if (ret != lastret) {
+                        get_time(&meas_stop);
+                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                             elapsed(&meas_start, &meas_stop),
+                             ret & FE_HAS_SIGNAL ?"S":"",
+                             ret & FE_HAS_CARRIER?"C":"",
+                             ret & FE_HAS_LOCK?   "L":"",
+                             ret);
+                        lastret = ret;
+                     }
+                     if (timeout_expired(&timeout) || flags.emulate) break;
+                     usleep(50000);
+                 }
+                 if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
+                    info("\n");
+                    continue;
+                 }
+                 verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
+
+                 //now, we should get also lock.
+                 set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 while((ret & FE_HAS_LOCK) == 0) {
+                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
+                     if (ret != lastret) {
+                        get_time(&meas_stop);
+                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                             elapsed(&meas_start, &meas_stop),
+                             ret & FE_HAS_SIGNAL ?"S":"",
+                             ret & FE_HAS_CARRIER?"C":"",
+                             ret & FE_HAS_LOCK?   "L":"",
+                             ret);
+                        lastret = ret;
+                     }
+                     if (timeout_expired(&timeout) || flags.emulate) break;
+                     usleep(50000);
+                 }
+                 if ((ret & FE_HAS_LOCK) == 0) {
+                    info("\n");
+                    continue;
+                 }
+                 verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
+
+                 if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
+                    verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
+                    continue;
+                 }
+
+                 t = alloc_transponder(f, test.delsys, test.polarization);
+                 t->type = ptest->type;
+                 t->source = 0;
+                 t->network_name=NULL;
+                 init_tp(t);
+
+                 copy_fe_params(t, ptest);
+                 print_transponder(buffer, t);
+                 info("        signal ok:\t%s\n", buffer);
+                                                      
+                 if (initial_table_lookup(frontend_fd)) {
+                   print_transponder(buffer,current_tp);
+                   info("        %s : scanning for services\n",buffer);
+                   scan_tp(); 
+                   if (flags.reception_info==1)
+                      print_signal_info(frontend_fd, current_tp);
+                   AddItem(scanned_transponders, current_tp);
+                 }              
+                 break;      
+             } // END: for DVB-T2 switch          
            } // END: for offs
         } // END: for channel       
      } // END: for mod_parm
@@ -2471,12 +2601,12 @@ int main(int argc, char ** argv) {
   char * initdata = NULL;
   char * positionfile = NULL;
   char * user_channel = NULL;
+  char * user_plp = NULL;
 
   // initialize lists.
   NewList(running_filters, "running_filters");
   NewList(waiting_filters, "waiting_filters");
   NewList(scanned_transponders, "scanned_transponders");
-  NewList(new_transponders, "new_transponders");
 
   #define cleanup() cl(country); cl(satellite); cl(initdata); cl(positionfile); cl(codepage);
 
@@ -2582,6 +2712,18 @@ int main(int argc, char ** argv) {
              }
              break;
      case 'p': //plp id to be used
+             i = 0;
+             user_plp = strtok(optarg,",");
+             while (user_plp != NULL) {
+               user_plplist[i] = atoi(user_plp);
+               if (user_plplist[i]<-1) user_plplist[i]=-1;
+               user_plp = strtok(NULL, ",");
+               i++;
+             }
+             user_plplist_length = i;
+             use_user_plplist = true;
+             i=0;
+             break;
              flags.override_plp_id = strtoul(optarg, NULL, 0);
              if (flags.override_plp_id==-1) flags.override_plp_id = NO_STREAM_ID_FILTER;
              break;
@@ -2672,7 +2814,9 @@ int main(int argc, char ** argv) {
            int atsc = ATSC_type;
            int dvb  = scantype;
            flags.atsc_type = ATSC_type;
-           choose_country(country, &atsc, &dvb, &scantype, &this_channellist, &dvbt2_plp_id);
+           plplist[0] = -1; plplist[1] = 0; plplist[2] = 1;
+           plplist_length = 3;
+           choose_country(country, &atsc, &dvb, &scantype, &this_channellist, plplist, &plplist_length);
            //dvbc: setting qam loop
            if ((modulation_flags & MOD_OVERRIDE_MAX) == MOD_USE_STANDARD)
               modulation_max = dvbc_qam_max(2, this_channellist);
@@ -2942,6 +3086,14 @@ int main(int argc, char ** argv) {
            info("BANDWIDTH_AUTO not supported, trying 6/7/8 MHz.\n");
            bandwidth_auto = false;
            }
+        if (fe_info.caps % FE_CAN_MULTISTREAM) {
+           info("MULTISTREAM\n");
+           multistream = true;
+           }
+        else {
+           info("MULTISTREAM not supported, disabling NO_STREAM_ID_FILTER.\n");
+           multistream = false;
+        }
         if (fe_info.frequency_min == 0 || fe_info.frequency_max == 0) {
            info("This dvb driver is *buggy*: the frequency limits are undefined - please report to linuxtv.org\n");
            fe_info.frequency_min = 177500000; fe_info.frequency_max = 858000000;

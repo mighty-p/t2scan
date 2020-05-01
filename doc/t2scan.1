@@ -23,7 +23,7 @@ specify lowest channel to scan,
 .B \-C N
 specify highest channel to scan,
 .TP
-.B \-l LIST
+.B \-l COMMA-SEPARATED LIST with channel numbers
 scan only channels in the given comma-separated list
 .TP 
 .B \-t TYPE
@@ -86,13 +86,13 @@ show expert help
 .B \-L N
 override the channel list to be used
 .br
-0 = Europe, UHF channels below 790 MHz [default for European countries],
+0 = Europe, UHF channels below 790 MHz [default for AT, BE, CH, DE, FR, GB, LU, NL]
 .br
 1 = Europe, UHF channels below 700 MHz,
 .br
 2 = Europe, all UHF channels,
 .br
-3 = Europe, all VHF and UHF channels,
+3 = Europe, all VHF and UHF channels [default for most European countries],
 .br
 4 = France, specific list with offsets,
 .br
@@ -116,12 +116,16 @@ Exclude duplicate services from output
 .br
 NOTE: If a service is found multiple times, this will only consider the instance found last!
 .TP
-.B \-p PLP_ID
-use the given PLP ID for scanning. The default is depending on the country (0 for most countries)
+.B \-p COMMA-SEPARATED LIST with PLP IDs
+use the given PLP IDs for scanning.
 .br
--1 activates auto-detection.
+The default is depending on the country (-1,0,1 for most countries)
 .br
-NOTE: For German DVB-T2, some additional "connect" channels are found with PLP ID 1, for Austria currently all channels are under PLP ID 1.
+The -1 does not filter the PLP and usually find the first PLP on the frequency.
+.br
+NOTE: In Germany, most DVB-T2 services are on PLP ID 0, some additional "connect" channels 
+.br
+are on PLP ID 1. For Austria, in most regions services are under PLP ID 1.
 .TP
 .B \-U
 don't update transponder parameters with the data in the NIT.

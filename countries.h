@@ -82,7 +82,9 @@ int choose_country (const char * country,
                     int * dvb_cable,
                     uint16_t * scan_type,
                     int * channellist,
-                    int * dvbt2_plp_id);
+                    int * plplist,
+                    int * plplist_length
+);
 
 int txt_to_country (const char * id);
 

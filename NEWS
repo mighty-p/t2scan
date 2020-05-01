@@ -1,5 +1,22 @@
 ChangeLog:
 ----------
+2020-05-01:
+  - Version string 20200501 for new work (release 0.6 has string 20200430)
+  - -p parameter can now take a comma-separated list of PLP IDs. They are scanned in the order
+     they appear in the list. 
+     - Default is -1,0,1 for most countries, -1,1,0 for AT and IT, -1,0,1,2,3 for Russia. 
+     - PLPs found via -1 are not scanned again 
+       (unless -U is used to avoid updating parameters from NIT). 
+     - If a network is found on a PLP (can be -1) and then again on a different PLP, but on the 
+       same frequency, then the PLP for the network is updated instead of creating a duplicate.
+       This is useful if scan starts with PLP ID -1 and NIT contains a wrong value for PLP ID.
+     - If there is no signal at all found with the first PLP, it's assumed there is not DVB-T2 on 
+       the frequency. If there is a signal, but no data / no lock, next PLPs are tried.
+     - A parameter for "fast scanning" to stop as soon as services are found on one PLP will be 
+       added at some a later time (hopefully soon). At the moment, due to the additionally 
+       scanned PLPs, scan may take longer than with t2scan version 0.6. You can work this around
+       (at the expense of potentially not finding all services and having short channel strings) 
+       by using "-p-1 -U" (or "-p-1" if you trust the PLP IDs in the NIT enough).
 2020-04-30:
   - Set default channel list to all VHF and UHF channels 
     (for AT, BE, CH, LU, NL, FR, GB only UHF channels 21-60 will be scanned by default) 

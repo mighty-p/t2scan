@@ -85,7 +85,8 @@ int choose_country (const char * country,
                     int * dvb,
                     uint16_t * scan_type,
                     int * channellist,
-                    int * dvbt2_plp_id
+                    int * plplist,
+                    int * plplist_length
 ) {
         if (*channellist == USERLIST) return 0;
 
@@ -100,9 +101,24 @@ int choose_country (const char * country,
          */
         switch(txt_to_country(country)) {
 
+                case    RU:
+                   plplist[0] = -1; plplist[1] = 0; plplist[2] = 1; plplist[3] = 2; plplist[4] = 3;
+                   *plplist_length = 5;
+                   switch(*dvb) {    
+                      case SCAN_CABLE:
+                         *scan_type = SCAN_CABLE;
+                         info("DVB cable\n");
+                         break;
+                      default:
+                         *scan_type = SCAN_TERRESTRIAL;
+                         info("DVB aerial\n");
+                         break;
+                   }
+                   break;
+
                 case    AT:     //      AUSTRIA
                 case    IT:     //      ITALY
-                        *dvbt2_plp_id=1; 
+                   plplist[0] = -1; plplist[1] = 1; plplist[2] = 0; plplist_length = 3;
                 case    BE:     //      BELGIUM
                 case    CH:     //      SWITZERLAND
                 case    CO:     //      COLOMBIA, DVB-C + DVB-T2
@@ -139,7 +155,7 @@ int choose_country (const char * country,
                                         break;
                                 }
                         break;
-                
+         
                 case BR:        //      Brazil
                         switch(*dvb) {    
                                 case SCAN_CABLE:
@@ -221,7 +237,7 @@ int choose_country (const char * country,
                                         info("DVB-C FI\n");
                                         break;
                                 default:
-                                        *channellist = DVBT_EU_UHF800;
+                                        *channellist = DVBT_EU_VHFUHF;
                                         info("DVB-T Europe VHF and UHF\n");
                                         break;               
                                 }
