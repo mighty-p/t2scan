@@ -445,7 +445,7 @@ static const char * ext_opts = "%s expert help\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
   "       -S <N>, --multiply-timeouts <N>\n"
   "               tuning speed (multiply tuning timeouts)\n"
-  "                 1 = default (2 sec for carrier, 4 sec for lock [T2: 10 sec])\n"
+  "                 1 = default (2 sec for carrier, 4 sec for lock [T2: 6 sec])\n"
   "                 2 = double (4 sec for carrier, 8 sec for lock [T2: 20 sec])\n"
   "                 3 = triple (6 sec for carrier, 12 sec for lock [T2: 30 sec])\n"
   "                 ...\n"
@@ -553,7 +553,7 @@ uint16_t lock_timeout(uint8_t delsys) {
      case SYS_DVBT:
         return 4000;
      case SYS_DVBT2:
-        return 10000;
+        return 6000; // return 10000;
      case SYS_DVBC_ANNEX_A:
      case SYS_DVBC_ANNEX_B:
      #if (SYS_DVBC_ANNEX_A != SYS_DVBC_ANNEX_C)
