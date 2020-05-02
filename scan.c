@@ -1982,19 +1982,34 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
 
 /* identify if tn is already in list of new transponders and needs PLP update */
 static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
-  if (tn->delsys = SYS_DVBT2) return 0;
+  int isProbablySame = 0;
+  if (tn->delsys != SYS_DVBT2) return 0;
 
   struct transponder * t;
   for(t = scanned_transponders->first; t; t = t->next) {
      if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {   
-        if (t->original_network_id == tn->original_network_id && t->network_id == tn->network_id && t->transport_stream_id == tn->transport_stream_id) {
-           info("  same network already found on CH");
-           if (tn->plp_id != NO_STREAM_ID_FILTER && tn->plp_id>=0) {
-              info(" (PLP ID updated from %d to %d)",t->plp_id, tn->plp_id);
-              t->plp_id = tn->plp_id;
+
+
+        if (t->network_id == tn->network_id) {
+           // this is most likely the same network
+           if (t->original_network_id == 0 && t->transport_stream_id == 0) { // NIT most likely hasn't been read previously, update
+              isProbablySame = 1;
+              t->original_network_id = tn->original_network_id;
+              t->transport_stream_id = tn->transport_stream_id;
            }
-           info("\n");
-           return 1;
+           if (tn->original_network_id == 0 && tn->transport_stream_id == 0) { // NIT most likely hasn't been read in later scan, assume it's the same
+              isProbablySame = 1;
+           }
+
+           if (isProbablySame || (t->original_network_id == tn->original_network_id && t->network_id == tn->network_id && t->transport_stream_id == tn->transport_stream_id)) {
+              info("  same network already found on CH");
+              if (tn->plp_id != NO_STREAM_ID_FILTER && tn->plp_id>=0) {
+                 info(" (PLP ID updated from %d to %d)",t->plp_id, tn->plp_id);
+                 t->plp_id = tn->plp_id;
+              }
+              info("\n");
+              return 1;
+           }
         }
      }
   }
