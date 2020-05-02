@@ -1990,14 +1990,14 @@ static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
      if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {   
 
 
-        if (t->network_id == tn->network_id) {
+        if (t->transport_stream_id == tn->transport_stream_id) {
            // this is most likely the same network
-           if (t->original_network_id == 0 && t->transport_stream_id == 0) { // NIT most likely hasn't been read previously, update
+           if (t->original_network_id == 0 && t->network_id == 0) { // NIT most likely hasn't been read previously, update
               isProbablySame = 1;
               t->original_network_id = tn->original_network_id;
-              t->transport_stream_id = tn->transport_stream_id;
+              t->network_id = tn->network_id;
            }
-           if (tn->original_network_id == 0 && tn->transport_stream_id == 0) { // NIT most likely hasn't been read in later scan, assume it's the same
+           if (tn->original_network_id == 0 && tn->network_id == 0) { // NIT most likely hasn't been read in later scan, assume it's the same
               isProbablySame = 1;
            }
 
