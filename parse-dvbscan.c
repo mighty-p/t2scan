@@ -80,7 +80,7 @@ enum __dvbscan_args {
 enum __extflags {
         ignore,
         wscan_version,
-        tuning_timeout,
+        timeout_multiplier,
         fe_type,
         list_idx
 };
@@ -109,8 +109,8 @@ void parse_t2scan_flags(const char * input_buffer, struct t2scan_flags * flags) 
                         case wscan_version:
                                 flags->version = strtoul(token, NULL, 10);
                                 break;
-                        case tuning_timeout:
-                                flags->tuning_timeout = strtoul(token, NULL, 10);
+                        case timeout_multiplier:
+                                flags->timeout_multiplier = strtoul(token, NULL, 10);
                                 break;
                         case fe_type:
                                 flags->scantype = txt_to_scantype(token);

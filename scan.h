@@ -51,7 +51,7 @@ struct t2scan_flags {
    uint8_t     atsc_type;
    uint8_t     need_2g_fe;
    uint32_t    list_id;
-   uint8_t     tuning_timeout;
+   uint8_t     timeout_multiplier;
    uint8_t     update_transponder_params;
    uint8_t     dedup;
    uint8_t     reception_info;

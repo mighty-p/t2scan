@@ -95,7 +95,7 @@ struct t2scan_flags flags = {
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
-  1,                // tuning speed {1 = fast, 2 = medium, 3 = slow}
+  1,                // timeout multiplier, controls tuning and filtering speed {1 = fastes and default, up to 5}
   1,                // update transponder parameters with those received from NIT // NOTE: I am researching if this should be better switched on or off
   0,                // default: no deduplicating // NOTE: I may change this after next release
   0,                // default: don't give out information about reception
@@ -444,7 +444,7 @@ static const char * ext_opts = "%s expert help\n"
   "               use device /dev/dvb/adapterN/ [default: auto detect]\n"
   "               (also allowed: -a /dev/dvb/adapterN/frontendM)\n"
   "       -S <N>, --multiply-timeouts <N>\n"
-  "               tuning speed (multiply tuning timeouts)\n"
+  "               tuning/filter speed (multiply tuning and filter timeouts)\n"
   "                 1 = default (2 sec for carrier, 4 sec for lock [T2: 6 sec])\n"
   "                 2 = double (4 sec for carrier, 8 sec for lock [T2: 12 sec])\n"
   "                 3 = triple (6 sec for carrier, 12 sec for lock [T2: 18 sec])\n"
@@ -493,7 +493,7 @@ static struct option long_options[] = {
     {"adapter"           , required_argument, NULL, 'a'},
     {"long-demux-timeout", no_argument,       NULL, 'F'},
     {"output-services"   , required_argument, NULL, 's'},
-    {"multiply-timeouts"      , required_argument, NULL, 'S'},
+    {"multiply-timeouts" , required_argument, NULL, 'S'},
     {"plp"               , required_argument, NULL, 'p'},
     {"use-pat"           , required_argument, NULL, 'P'},
     {NULL                , 0                , NULL,  0 },
@@ -1492,8 +1492,9 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
 
   s->run_once = run_once;
   s->segmented = segmented;
-  s->timeout = 1; // add 1sec for safety..
-  s->timeout += 10 * repetition_rate(flags.scantype, table_id);
+  s->timeout = 2; // 2sec safety buffer
+  s->timeout += repetition_rate(flags.scantype, table_id);
+  s->timeout = s->timeout * flags.timeout_multiplier; //currently no option to increase filter timeouts, we use the timeout_multiplier here
   verbose("Timeout length for table_id %d: %lld seconds.\n",table_id, (long long) s->timeout);
   s->table_id_ext = table_id_ext;
   s->section_version_number = -1;
@@ -1556,6 +1557,7 @@ static int parse_section(struct section_buf * s) {
   if (! crc_check(&buf[0],section_length+12)) {
      int verbosity = 5;
      int slow_rep_rate = 30 + repetition_rate(flags.scantype, s->table_id);
+
      hexdump(__FUNCTION__,&buf[0], section_length+14);
      if (s->timeout < slow_rep_rate) {
         info("increasing filter timeout to %d secs (pid:%d table_id:%d table_id_ext:%d).\n",
@@ -2409,7 +2411,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     continue;
                    }
                  get_time(&meas_start);
-                 set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 set_timeout(time2carrier * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
                  if (!flags.emulate)
                     usleep(100000);
                  ret = 0; lastret = ret;
@@ -2438,7 +2440,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
                  //now, we should get also lock.
-                 set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
                  while((ret & FE_HAS_LOCK) == 0) {
                      ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
                      if (ret != lastret) {
@@ -2497,7 +2499,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     continue;
                  }
                  get_time(&meas_start);
-                 set_timeout(time2carrier * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 set_timeout(time2carrier * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
                  if (!flags.emulate)
                     usleep(100000);
                  ret = 0; lastret = ret;
@@ -2525,7 +2527,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
                  //now, we should get also lock.
-                 set_timeout(time2lock * flags.tuning_timeout, &timeout);  // N msec * {1,2,3}
+                 set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
                  while((ret & FE_HAS_LOCK) == 0) {
                      ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
                      if (ret != lastret) {
@@ -2742,10 +2744,10 @@ int main(int argc, char ** argv) {
              Radio_Services = (strstr(optarg, "r"))? 1: 0;
              Other_Services = (strstr(optarg, "o"))? 1: 0;
              break;
-     case 'S': //tuning speed, in w_scan this option was 't'
-             flags.tuning_timeout = strtoul(optarg, NULL, 0);
-             if ((flags.tuning_timeout < 1)) bad_usage(argv[0]);
-             if ((flags.tuning_timeout > 3)) bad_usage(argv[0]);
+     case 'S': // multiply tuning & filter timeouts, in w_scan this option was 't'/'F'
+             flags.timeout_multiplier = strtoul(optarg, NULL, 0);
+             if ((flags.timeout_multiplier < 1)) bad_usage(argv[0]);
+             if ((flags.timeout_multiplier > 5)) bad_usage(argv[0]);
              break;
      case 't': // dvb-t modes to scan (0=all, 1=DVB-T, 2=DVB-T2)
              flags.dvbt_type = strtoul(optarg, NULL, 0);

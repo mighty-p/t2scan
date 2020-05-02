@@ -53,7 +53,7 @@ void dvbscan_dump_tuningdata (  FILE *f,
                 fprintf (f, "# (https://github.com/mighty-p/t2scan)\n");
                 fprintf (f, "#! <t2scan> %d %u 1 %s %s </t2scan>\n",
                                 flags->version,
-                                flags->tuning_timeout,
+                                flags->timeout_multiplier,
                                 scantype_to_txt(flags->scantype),
                                 country_to_short_name(flags->list_id));
                 fprintf (f, "#------------------------------------------------------------------------------\n");
