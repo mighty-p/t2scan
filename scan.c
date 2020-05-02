@@ -1985,7 +1985,7 @@ static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
   for(t = scanned_transponders->first; t; t = t->next) {
      if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {   
         if (t->original_network_id == tn->original_network_id && t->network_id == tn->network_id && t->transport_stream_id == tn->transport_stream_id) {
-           info("        same network already found on CH");
+           info("  same network already found on CH");
            if (tn->plp_id != NO_STREAM_ID_FILTER && tn->plp_id>=0) {
               info(" (PLP updated from %d to %d)",t->plp_id, tn->plp_id);
               t->plp_id = tn->plp_id;
@@ -2400,9 +2400,9 @@ static void network_scan(int frontend_fd, int tuning_data) {
                    if (no_signal_on_freq) continue;
                    test.plp_id = (current_plp==-1) ? NO_STREAM_ID_FILTER : current_plp;
                    info("(time: %s) ", run_time());
-                   info("\nplp %d: ",current_plp);
+                   info("\n   plp id %d: ",current_plp);
                    if (is_already_scanned_transponder_plp(&test, 1)) {
-                       info("        skipped (already scanned PLP)\n");
+                       info("  skipped (already scanned PLP)\n");
                        continue;
                    }
                    if (set_frontend(frontend_fd, ptest) < 0) {
@@ -2433,7 +2433,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      usleep(50000);
                  }
                  if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
-                    info("        no signal\n");
+                    info("  no signal\n");
                     no_signal_on_freq = true;
                     continue;
                  }
@@ -2457,7 +2457,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      usleep(50000);
                  }
                  if ((ret & FE_HAS_LOCK) == 0) {
-                    info("        no data\n");
+                    info("  no data\n");
                     continue;
                  }
                  verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
@@ -2475,7 +2475,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  copy_fe_params(t, ptest);
                  print_transponder(buffer, t);
-                 info("        signal ok:\t%s\n", buffer);
+                 info("  signal ok:\t%s\n", buffer);
                                                       
                  if (initial_table_lookup(frontend_fd)) {
                    print_transponder(buffer,current_tp);
