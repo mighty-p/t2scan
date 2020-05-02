@@ -1331,7 +1331,7 @@ static unsigned int chan_to_freq(int channel, int channellist) {
 }
 
 static uint16_t check_frontend(int fd, int verbose) {
-  fe_status_t status;
+  fe_status_t status = (fe_status_t)0;
   EMUL(em_status, &status)
   if (ioctl(fd, FE_READ_STATUS, &status) < 0) {
      error("FE_READ_STATUS failed during scan: %d %s\n", errno, strerror(errno));
@@ -3010,7 +3010,7 @@ int main(int argc, char ** argv) {
      }
   flags.scantype = scantype;
 
-  fe_status_t fe_status;
+  fe_status_t fe_status = (fe_status_t)0;
   EMUL(em_status, &fe_status)
   if (ioctl(frontend_fd, FE_READ_STATUS, &fe_status) == -1) {
      //cleanup();
