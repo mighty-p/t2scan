@@ -773,7 +773,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
      case 2: t->bandwidth = 6000000; break;
      case 3: t->bandwidth = 5000000; break;
      default:
-        verbose("undefined bandwidth value found, using 8000000.\n");
+        moreverbose("undefined bandwidth value found, using 8000000.\n");
         t->bandwidth = 8000000;
      }
   t->priority = (buf[6] >> 4) & 0x1;                                                                 // priority 1 bslbf,               20140705: convert to bool.
@@ -785,7 +785,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
      case 1: t->modulation = QAM_16; break;
      case 2: t->modulation = QAM_64; break;
      default:
-        verbose("undefined modulation value found, using QAM_AUTO.\n");
+        moreverbose("undefined modulation value found, using QAM_AUTO.\n");
         t->modulation = QAM_AUTO;
      }
   switch((buf[7] >> 3) & 0x7) {                                                                      // hierarchy_information 3 bslbf
@@ -807,7 +807,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
      case 3: t->coderate = FEC_5_6; break;
      case 4: t->coderate = FEC_7_8; break;
      default:
-             verbose("undefined coderate HP, using FEC_AUTO\n");
+             moreverbose("undefined coderate HP, using FEC_AUTO\n");
              t->coderate = FEC_AUTO;
      }
    switch((buf[8] >> 5) & 0x7) {                                                                     // code_rate-LP_stream 3 bslbf
@@ -817,7 +817,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
       case 3: t->coderate_LP = FEC_5_6; break;
       case 4: t->coderate_LP = FEC_7_8; break;
       default:
-         verbose("undefined coderate LP, using FEC_AUTO\n");
+         moreverbose("undefined coderate LP, using FEC_AUTO\n");
          t->coderate_LP = FEC_AUTO;
       }
   if (t->hierarchy == HIERARCHY_NONE)
@@ -835,7 +835,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
      case 1: t->transmission = TRANSMISSION_MODE_8K; break;
      case 2: t->transmission = TRANSMISSION_MODE_4K; break;
      default:
-             verbose("undefined transmission mode, using TRANSMISSION_MODE_AUTO\n");
+             moreverbose("undefined transmission mode, using TRANSMISSION_MODE_AUTO\n");
              t->transmission = TRANSMISSION_MODE_AUTO;
      }
   t->other_frequency_flag = ((buf[8] & 0x01) != 0);                                                  // other_frequency_flag 1 bslbf
@@ -868,7 +868,7 @@ void parse_terrestrial_delivery_system_descriptor(const unsigned char * buf,
         } // end other_frequency_flag
      } // end if center_frequency > 0
   if ((t->frequency == 0) && (t->other_frequency_flag == 0)) {
-     verbose("%s: center_freq = 0 && other_frequency_flag = 0 -> set other_frequency_flag = 1\n", __FUNCTION__);
+     moreverbose("%s: center_freq = 0 && other_frequency_flag = 0 -> set other_frequency_flag = 1\n", __FUNCTION__);
      t->other_frequency_flag = 1;
      }
 

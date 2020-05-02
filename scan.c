@@ -1131,7 +1131,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
   char buffer[128];
   int descriptors_loop_len = ((buf[0] & 0x0f) << 8) | buf[1];
   
-  verbose("%s: (xxxx:%u:xxxx)\n", table_id == 0x40?"NIT(act)":"NIT(oth)", network_id);
+  moreverbose("%s: (xxxx:%u:xxxx)\n", table_id == 0x40?"NIT(act)":"NIT(oth)", network_id);
   hexdump(__FUNCTION__, buf, section_length);
 
   if ((table_id == TABLE_NIT_ACT) && (current_tp->network_id != network_id)) {
@@ -1156,8 +1156,8 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
      uint16_t transport_stream_id = (buf[0] << 8) | buf[1];
      uint16_t original_network_id = (buf[2] << 8) | buf[3];
      descriptors_loop_len =        ((buf[4] << 8) | buf[5]) & 0x0FFF;
-     verbose("        ----------------------------------------------------------\n");
-     verbose("        %s: (%u:%u:%u)\n",  table_id == 0x40?"NIT(act)":"NIT(oth)",
+     moreverbose("        ----------------------------------------------------------\n");
+     moreverbose("        %s: (%u:%u:%u)\n",  table_id == 0x40?"NIT(act)":"NIT(oth)",
             original_network_id, network_id, transport_stream_id);
      
      if (section_length < descriptors_loop_len + 4) {
@@ -1169,7 +1169,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
 
      // only use the NIT entry for current TSID, NID to get ONID and exact tuning data
      if ((current_tp->type != SCAN_TERRESTRIAL) || ((transport_stream_id == current_tp->transport_stream_id) && (network_id == current_tp->network_id))) {
-        verbose("        section is for currently received network.\n");
+        moreverbose("        section is for currently received network.\n");
         memset(&tn, 0, sizeof(tn));
         tn.type                = current_tp->type;
         tn.network_PID         = current_tp->network_PID;
@@ -1212,9 +1212,9 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
            if (current_tp->plp_id==NO_STREAM_ID_FILTER) current_tp->plp_id = -1;
         }
 
-     }/* else {
-       verbose("        section is for a network on different transponder.\n");
-       memset(&tn, 0, sizeof(tn));
+     } else {
+       moreverbose("        section is for a network on different transponder.\n");
+       /*memset(&tn, 0, sizeof(tn));
        tn.type                = current_tp->type;
        tn.network_PID         = current_tp->network_PID;
        tn.network_id          = network_id;
@@ -1226,8 +1226,8 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
        NewList(tn.services, "tn_services");
        tn.cells = &tn._cells;
        NewList(tn.cells, "tn_cells");
-       parse_descriptors(table_id, buf + 6, descriptors_loop_len, &tn, flags.scantype);
-     } */
+       parse_descriptors(table_id, buf + 6, descriptors_loop_len, &tn, flags.scantype);*/
+     }
      
      section_length -= descriptors_loop_len + 6;
      buf            += descriptors_loop_len + 6;
@@ -1267,7 +1267,7 @@ em_static void parse_sdt(const unsigned char * buf, uint16_t section_length, uin
 }
 
 em_static void parse_pat(const unsigned char * buf, uint16_t section_length, uint16_t transport_stream_id, uint32_t flags) {
-   verbose("PAT (xxxx:xxxx:%u)\n", transport_stream_id);  
+   debug("PAT (xxxx:xxxx:%u)\n", transport_stream_id);  
   hexdump(__FUNCTION__, buf, section_length);
 
   if (current_tp->transport_stream_id != transport_stream_id) {
@@ -1495,7 +1495,7 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
   s->timeout = 5; // 5 sec safety buffer
   s->timeout += repetition_rate(flags.scantype, table_id);
   s->timeout = s->timeout * flags.timeout_multiplier; //currently no option to increase filter timeouts, we use the timeout_multiplier here
-  verbose("Timeout length for table_id %d: %lld seconds.\n",table_id, (long long) s->timeout);
+  debug("Timeout length for table_id %d: %lld seconds.\n",table_id, (long long) s->timeout);
   s->table_id_ext = table_id_ext;
   s->section_version_number = -1;
   s->next = 0;
@@ -1635,7 +1635,7 @@ static int parse_section(struct section_buf * s) {
         parse_pat(buf, section_length, table_id_ext, s->flags);
         break;
      case TABLE_PMT:
-        verbose("PMT %d (0x%04x) for service %d (0x%04x)\n", s->pid, s->pid, table_id_ext, table_id_ext);
+        moreverbose("PMT %d (0x%04x) for service %d (0x%04x)\n", s->pid, s->pid, table_id_ext, table_id_ext);
         parse_pmt(buf, section_length, table_id_ext);
         break;
      case TABLE_NIT_ACT:
@@ -1646,13 +1646,13 @@ static int parse_section(struct section_buf * s) {
         break;
      case TABLE_SDT_ACT:
      case TABLE_SDT_OTH:
-        verbose("SDT(%s TS, transport_stream_id %d (0x%04x) )\n", table_id == 0x42 ? "actual":"other",
+        moreverbose("SDT(%s TS, transport_stream_id %d (0x%04x) )\n", table_id == 0x42 ? "actual":"other",
                table_id_ext, table_id_ext);
         parse_sdt(buf, section_length, table_id_ext);
         break;
      case TABLE_VCT_TERR:
      case TABLE_VCT_CABLE:
-        verbose("ATSC VCT, table_id %d, table_id_ext %d\n", table_id, table_id_ext);
+        moreverbose("ATSC VCT, table_id %d, table_id_ext %d\n", table_id, table_id_ext);
         parse_psip_vct(buf, section_length, table_id, table_id_ext);
         break;
      default:;
@@ -1911,7 +1911,7 @@ void print_signal_info(int frontend_fd, struct transponder * t) {
 
 
 
-static void scan_tp(void) {
+static void scan_services(void) {
   struct section_buf s[4];
   int result = 0;
 
@@ -1923,6 +1923,7 @@ static void scan_tp(void) {
   setup_filter(&s[3], demux_devname, PID_PAT, TABLE_PAT, -1, 1, 0, 0);
   add_filter(&s[3]);
 
+  verbose("     SDT/PMT lookup..\n");
   EMUL(em_readfilters, &result)
   do { read_filters(); }
      while((running_filters->count > 0) || (waiting_filters->count > 0));
@@ -1933,12 +1934,12 @@ static void scan_tp(void) {
  * program association table && network information table for update of its
  * transponder data
  */
-static bool initial_table_lookup(int frontend_fd) {
+static bool scan_pat_nit(int frontend_fd) {
   struct section_buf s;
   int result;
   current_tp->network_PID = PID_NIT_ST;
   memset(&s, 0, sizeof(s));
-  verbose("        initial PAT lookup..\n");
+  verbose("     PAT lookup..\n");
   setup_filter(&s, demux_devname, PID_PAT, TABLE_PAT, -1, 1, 0, SECTION_FLAG_INITIAL);
   add_filter(&s);
   EMUL(em_readfilters, &result)
@@ -1954,7 +1955,7 @@ static bool initial_table_lookup(int frontend_fd) {
   // Therefore updating current_tp, kindly asking driver for actual delsys.
   fe_get_delsys(frontend_fd, current_tp);
   memset(&s, 0, sizeof(s));
-  verbose("        initial NIT lookup..\n");
+  verbose("     NIT lookup..\n");
   setup_filter(&s, demux_devname, current_tp->network_PID, TABLE_NIT_ACT, -1, 1, 0, SECTION_FLAG_INITIAL);
   add_filter(&s);
   EMUL(em_readfilters, &result)
@@ -1987,7 +1988,7 @@ static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
         if (t->original_network_id == tn->original_network_id && t->network_id == tn->network_id && t->transport_stream_id == tn->transport_stream_id) {
            info("  same network already found on CH");
            if (tn->plp_id != NO_STREAM_ID_FILTER && tn->plp_id>=0) {
-              info(" (PLP updated from %d to %d)",t->plp_id, tn->plp_id);
+              info(" (PLP ID updated from %d to %d)",t->plp_id, tn->plp_id);
               t->plp_id = tn->plp_id;
            }
            info("\n");
@@ -2402,7 +2403,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                    info("(time: %s) ", run_time());
                    info("\n   plp id %d: ",current_plp);
                    if (is_already_scanned_transponder_plp(&test, 1)) {
-                       info("  skipped (already scanned PLP)\n");
+                       info("  skipped (already scanned PLP ID)\n");
                        continue;
                    }
                    if (set_frontend(frontend_fd, ptest) < 0) {
@@ -2421,7 +2422,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
                              elapsed(&meas_start, &meas_stop),
                              ret & FE_HAS_SIGNAL ?"S":"",
                              ret & FE_HAS_CARRIER?"C":"",
@@ -2437,7 +2438,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     no_signal_on_freq = true;
                     continue;
                  }
-                 verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
+                 moreverbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
                  //now, we should get also lock.
                  set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
@@ -2445,7 +2446,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
                              elapsed(&meas_start, &meas_stop),
                              ret & FE_HAS_SIGNAL ?"S":"",
                              ret & FE_HAS_CARRIER?"C":"",
@@ -2460,7 +2461,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     info("  no data\n");
                     continue;
                  }
-                 verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
+                 moreverbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
 
                  if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
                     verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
@@ -2477,11 +2478,11 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  print_transponder(buffer, t);
                  info("  signal ok:\t%s\n", buffer);
                                                       
-                 if (initial_table_lookup(frontend_fd)) {
+                 if (scan_pat_nit(frontend_fd)) {
                    print_transponder(buffer,current_tp);
                    if (!is_already_scanned_transponder_t2_samefreq(current_tp)) {
                       info("        %s : scanning for services\n",buffer);
-                      scan_tp(); 
+                      scan_services(); 
                       if (flags.reception_info==1)
                          print_signal_info(frontend_fd, current_tp);
                       AddItem(scanned_transponders, current_tp);
@@ -2509,7 +2510,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
                              elapsed(&meas_start, &meas_stop),
                              ret & FE_HAS_SIGNAL ?"S":"",
                              ret & FE_HAS_CARRIER?"C":"",
@@ -2524,7 +2525,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     info("\n");
                     continue;
                  }
-                 verbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
+                 moreverbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
                  //now, we should get also lock.
                  set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
@@ -2532,7 +2533,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                      ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
                      if (ret != lastret) {
                         get_time(&meas_stop);
-                        verbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
                              elapsed(&meas_start, &meas_stop),
                              ret & FE_HAS_SIGNAL ?"S":"",
                              ret & FE_HAS_CARRIER?"C":"",
@@ -2547,7 +2548,7 @@ static void network_scan(int frontend_fd, int tuning_data) {
                     info("\n");
                     continue;
                  }
-                 verbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
+                 moreverbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
 
                  if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
                     verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
@@ -2564,10 +2565,10 @@ static void network_scan(int frontend_fd, int tuning_data) {
                  print_transponder(buffer, t);
                  info("        signal ok:\t%s\n", buffer);
                                                       
-                 if (initial_table_lookup(frontend_fd)) {
+                 if (scan_pat_nit(frontend_fd)) {
                    print_transponder(buffer,current_tp);
                    info("        %s : scanning for services\n",buffer);
-                   scan_tp(); 
+                   scan_services(); 
                    if (flags.reception_info==1)
                       print_signal_info(frontend_fd, current_tp);
                    AddItem(scanned_transponders, current_tp);
