@@ -1982,6 +1982,8 @@ static int is_nearly_same_frequency(uint32_t f1, uint32_t f2, scantype_t type) {
 
 /* identify if tn is already in list of new transponders and needs PLP update */
 static int is_already_scanned_transponder_t2_samefreq(struct transponder * tn) {
+  if (tn->delsys = SYS_DVBT2) return 0;
+
   struct transponder * t;
   for(t = scanned_transponders->first; t; t = t->next) {
      if ((t->type == tn->type) && is_nearly_same_frequency(t->frequency, tn->frequency, t->type)) {   
@@ -2384,197 +2386,117 @@ static void network_scan(int frontend_fd, int tuning_data) {
 
                  default:;
               } // END: switch (test.type)
-              if (flags.scantype==SCAN_TERRESTRIAL && delsys == SYS_DVBT2) {
-                 no_signal_on_freq = false; // first assume the frequency can be used
-                 // plp loop
-                 if (use_user_plplist) {
-                    my_plplist = &user_plplist;
-                    my_plplist_length = user_plplist_length;
-                 } else {
-                    my_plplist = &plplist;
-                    my_plplist_length = plplist_length;
-                 }
-                 for (plp_i = 0; plp_i < my_plplist_length; plp_i++) {
-                   current_plp = my_plplist[plp_i];
-                   // check if plp id = -1 and this is supported
-                   if (current_plp==-1 && !multistream) continue;
-                   if (no_signal_on_freq) continue;
+             
+              no_signal_on_freq = false; // first assume the frequency can be used
+              // plp loop
+              if (delsys == SYS_DVBT2 && use_user_plplist) {
+                 my_plplist = &user_plplist;
+                 my_plplist_length = user_plplist_length;
+              } else if (delsys == SYS_DVBT2) {
+                 my_plplist = &plplist;
+                 my_plplist_length = plplist_length;
+              } else {
+                 // for legacy DVB-T (or ATSC) there is nothing such as PLPs
+                 // therefore we just set the list lenght to 1 to let the frequency be scanned
+                 // my_plplist will actually not be read at all in this scenario
+                 my_plplist_length = 1;
+              }
+              for (plp_i = 0; plp_i < my_plplist_length; plp_i++) {
+                if (delsys == SYS_DVBT2) current_plp = my_plplist[plp_i];
+                // check if plp id = -1 and this is supported
+                if (delsys == SYS_DVBT2 && current_plp==-1 && !multistream) continue;
+                if (no_signal_on_freq) continue;
+                if (delsys == SYS_DVBT2)
                    test.plp_id = (current_plp==-1) ? NO_STREAM_ID_FILTER : current_plp;
-                   info("(time: %s) ", run_time());
-                   info("\n   plp id %d: ",current_plp);
-                   if (is_already_scanned_transponder_plp(&test, 1)) {
-                       info("  skipped (already scanned PLP ID)\n");
-                       continue;
+                info("(time: %s) ", run_time());
+                if (delsys == SYS_DVBT2) info("\n   plp id %d: ",current_plp);
+                if (delsys == SYS_DVBT2 && is_already_scanned_transponder_plp(&test, 1)) {
+                    info("  skipped (already scanned PLP ID)\n");
+                    continue;
+                }
+                if (set_frontend(frontend_fd, ptest) < 0) {
+                   print_transponder(buffer, ptest);
+                   dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
+                   continue;
+                }
+                get_time(&meas_start);
+                set_timeout(time2carrier * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
+                if (!flags.emulate)
+                   usleep(100000);
+                ret = 0; lastret = ret;
+
+                // look for some signal.
+                while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
+                   ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
+                   if (ret != lastret) {
+                      get_time(&meas_stop);
+                      moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                           elapsed(&meas_start, &meas_stop),
+                           ret & FE_HAS_SIGNAL ?"S":"",
+                           ret & FE_HAS_CARRIER?"C":"",
+                           ret & FE_HAS_LOCK?   "L":"",
+                           ret);
+                      lastret = ret;
                    }
-                   if (set_frontend(frontend_fd, ptest) < 0) {
-                    print_transponder(buffer, ptest);
-                    dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
-                    continue;
-                   }
-                 get_time(&meas_start);
-                 set_timeout(time2carrier * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
-                 if (!flags.emulate)
-                    usleep(100000);
-                 ret = 0; lastret = ret;
+                   if (timeout_expired(&timeout) || flags.emulate) break;
+                   usleep(50000);
+                }
+                if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
+                   info("  no signal\n");
+                   no_signal_on_freq = true;
+                   continue;
+                }
+                moreverbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
 
-                 // look for some signal.
-                 while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                     }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
-                 }
-                 if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
-                    info("  no signal\n");
-                    no_signal_on_freq = true;
-                    continue;
-                 }
-                 moreverbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
-
-                 //now, we should get also lock.
-                 set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
-                 while((ret & FE_HAS_LOCK) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                     }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
-                 }
-                 if ((ret & FE_HAS_LOCK) == 0) {
-                    info("  no data\n");
-                    continue;
-                 }
-                 moreverbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
-
-                 if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
-                    verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
-                    continue;
-                 }
-
-                 t = alloc_transponder(f, test.delsys, test.polarization);
-                 t->type = ptest->type;
-                 t->source = 0;
-                 t->network_name=NULL;
-                 init_tp(t);
-
-                 copy_fe_params(t, ptest);
-                 print_transponder(buffer, t);
-                 info("  signal ok:\t%s\n", buffer);
-                                                      
-                 if (scan_pat_nit(frontend_fd)) {
-                   print_transponder(buffer,current_tp);
-                   if (!is_already_scanned_transponder_t2_samefreq(current_tp)) {
-                      info("        %s : scanning for services\n",buffer);
-                      scan_services(); 
-                      if (flags.reception_info==1)
-                         print_signal_info(frontend_fd, current_tp);
-                      AddItem(scanned_transponders, current_tp);
+                //now, we should get also lock.
+                set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
+                while((ret & FE_HAS_LOCK) == 0) {
+                    ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
+                    if (ret != lastret) {
+                       get_time(&meas_stop);
+                       moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
+                            elapsed(&meas_start, &meas_stop),
+                            ret & FE_HAS_SIGNAL ?"S":"",
+                            ret & FE_HAS_CARRIER?"C":"",
+                            ret & FE_HAS_LOCK?   "L":"",
+                            ret);
+                       lastret = ret;
                     }
-                  }                
-               }
+                    if (timeout_expired(&timeout) || flags.emulate) break;
+                    usleep(50000);
+                }
+                if ((ret & FE_HAS_LOCK) == 0) {
+                   info("  no lock\n");
+                   continue;
+                }
+                moreverbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
 
+                if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
+                   verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
+                   continue;
+                }
 
+                t = alloc_transponder(f, test.delsys, test.polarization);
+                t->type = ptest->type;
+                t->source = 0;
+                t->network_name=NULL;
+                init_tp(t);
 
-              } else {              
-                 info("(time: %s) ", run_time());
-                 if (set_frontend(frontend_fd, ptest) < 0) {
-                    print_transponder(buffer, ptest);
-                    dprintf(1,"\n%s:%d: Setting frontend failed %s\n", __FUNCTION__, __LINE__, buffer);
-                    continue;
-                 }
-                 get_time(&meas_start);
-                 set_timeout(time2carrier * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
-                 if (!flags.emulate)
-                    usleep(100000);
-                 ret = 0; lastret = ret;
-
-                 // look for some signal.
-                 while((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)? 1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                     }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
-                 }
-                 if ((ret & (FE_HAS_SIGNAL | FE_HAS_CARRIER)) == 0) {                
-                    info("\n");
-                    continue;
-                 }
-                 moreverbose("\n        (%.3fsec) signal", elapsed(&meas_start, &meas_stop));
-
-                 //now, we should get also lock.
-                 set_timeout(time2lock * flags.timeout_multiplier, &timeout);  // N msec * {1,2,3}
-                 while((ret & FE_HAS_LOCK) == 0) {
-                     ret = check_frontend(frontend_fd, (verbosity>3)?1:0);
-                     if (ret != lastret) {
-                        get_time(&meas_stop);
-                        moreverbose("\n        (%.3fsec): %s%s%s (0x%X)",
-                             elapsed(&meas_start, &meas_stop),
-                             ret & FE_HAS_SIGNAL ?"S":"",
-                             ret & FE_HAS_CARRIER?"C":"",
-                             ret & FE_HAS_LOCK?   "L":"",
-                             ret);
-                        lastret = ret;
-                     }
-                     if (timeout_expired(&timeout) || flags.emulate) break;
-                     usleep(50000);
-                 }
-                 if ((ret & FE_HAS_LOCK) == 0) {
-                    info("\n");
-                    continue;
-                 }
-                 moreverbose("\n        (%.3fsec) lock\n", elapsed(&meas_start, &meas_stop));
-
-                 if ((test.type == SCAN_TERRESTRIAL) && (delsys != fe_get_delsys(frontend_fd, NULL))) {
-                    verbose("wrong delsys: skip over.\n");                    // cxd2820r: T <-> T2
-                    continue;
-                 }
-
-                 t = alloc_transponder(f, test.delsys, test.polarization);
-                 t->type = ptest->type;
-                 t->source = 0;
-                 t->network_name=NULL;
-                 init_tp(t);
-
-                 copy_fe_params(t, ptest);
-                 print_transponder(buffer, t);
-                 info("        signal ok:\t%s\n", buffer);
+                copy_fe_params(t, ptest);
+                print_transponder(buffer, t);
+                info("  signal ok:\t%s\n", buffer);
                                                       
-                 if (scan_pat_nit(frontend_fd)) {
-                   print_transponder(buffer,current_tp);
-                   info("        %s : scanning for services\n",buffer);
-                   scan_services(); 
-                   if (flags.reception_info==1)
-                      print_signal_info(frontend_fd, current_tp);
-                   AddItem(scanned_transponders, current_tp);
-                 }              
-                 break;      
-             } // END: for DVB-T2 switch          
+                if (scan_pat_nit(frontend_fd)) {
+                  print_transponder(buffer,current_tp);
+                  if (!is_already_scanned_transponder_t2_samefreq(current_tp)) {
+                     info("        %s : scanning for services\n",buffer);
+                     scan_services(); 
+                     if (flags.reception_info==1)
+                        print_signal_info(frontend_fd, current_tp);
+                     AddItem(scanned_transponders, current_tp);
+                  }
+                }                
+              } // END: of plp loop          
            } // END: for offs
         } // END: for channel       
      } // END: for mod_parm
