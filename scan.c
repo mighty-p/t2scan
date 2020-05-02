@@ -1492,7 +1492,7 @@ static void setup_filter(struct section_buf * s, const char * dmx_devname,
 
   s->run_once = run_once;
   s->segmented = segmented;
-  s->timeout = 2; // 2sec safety buffer
+  s->timeout = 5; // 5 sec safety buffer
   s->timeout += repetition_rate(flags.scantype, table_id);
   s->timeout = s->timeout * flags.timeout_multiplier; //currently no option to increase filter timeouts, we use the timeout_multiplier here
   verbose("Timeout length for table_id %d: %lld seconds.\n",table_id, (long long) s->timeout);
