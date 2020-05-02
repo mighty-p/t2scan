@@ -1200,7 +1200,7 @@ em_static void parse_nit(const unsigned char * buf, uint16_t section_length, uin
         // we ignore the frequency, but set all other things
         //current_tp->bandwidth = tn.bandwidth;
 
-        if (flags.update_transponder_params) {        
+        if (flags.update_transponder_params && tn.delsys == current_tp->delsys) {        
            current_tp->coderate = tn.coderate;
            current_tp->coderate_LP = tn.coderate_LP;
            current_tp->guard = tn.guard;
