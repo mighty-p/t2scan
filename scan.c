@@ -91,7 +91,6 @@ struct t2scan_flags flags = {
   0,                // scan DVB-T and DVB-T2 if type is t
   0,                // default lowest channel to scan
   133,              // default highest channel to scan
-  -2,               // user-defined plp id to be used for DVB-T2
   ATSC_VSB,         // default for ATSC scan
   0,                // need 2nd generation frontend
   DE,               // country index or sat index
@@ -2663,9 +2662,6 @@ int main(int argc, char ** argv) {
              user_plplist_length = i;
              use_user_plplist = true;
              i=0;
-             break;
-             flags.override_plp_id = strtoul(optarg, NULL, 0);
-             if (flags.override_plp_id==-1) flags.override_plp_id = NO_STREAM_ID_FILTER;
              break;
      case 'P': //ATSC PSIP scan
              no_ATSC_PSIP = 1;
