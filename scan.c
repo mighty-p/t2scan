@@ -1398,7 +1398,7 @@ static int set_frontend(int frontend_fd, struct transponder * t) {
         switch(t->type) {
            case SCAN_TERRESTRIAL:
               set_cmd_sequence(DTV_DELIVERY_SYSTEM,   t->delsys);
-              if (t->delsys == SYS_DVBT2) {
+              if (t->delsys == SYS_DVBT2 && multistream) {
                  set_cmd_sequence(DTV_STREAM_ID, t->plp_id);
                  }
               set_cmd_sequence(DTV_FREQUENCY,         t->frequency);
@@ -2403,7 +2403,12 @@ static void network_scan(int frontend_fd, int tuning_data) {
              
               no_signal_on_freq = false; // first assume the frequency can be used
               // plp loop
-              if (delsys == SYS_DVBT2 && use_user_plplist) {
+              if (delsys == SYS_DVBT2 && (!multistream)) {
+                 // multistream is not supported, so use plp id -1 ("autodetection") as only value to scan
+                 my_plplist = &plplist;
+                 my_plplist[0] = -1;
+                 my_plplist_length = 1;
+              } else if (delsys == SYS_DVBT2 && use_user_plplist) {
                  my_plplist = &user_plplist;
                  my_plplist_length = user_plplist_length;
               } else if (delsys == SYS_DVBT2) {
@@ -2418,7 +2423,6 @@ static void network_scan(int frontend_fd, int tuning_data) {
               for (plp_i = 0; plp_i < my_plplist_length; plp_i++) {
                 if (delsys == SYS_DVBT2) current_plp = my_plplist[plp_i];
                 // check if plp id = -1 and this is supported
-                if (delsys == SYS_DVBT2 && current_plp==-1 && !multistream) continue;
                 if (no_signal_on_freq) continue;
                 if (delsys == SYS_DVBT2)
                    test.plp_id = (current_plp==-1) ? NO_STREAM_ID_FILTER : current_plp;
@@ -3024,10 +3028,10 @@ int main(int argc, char ** argv) {
            }
         if (fe_info.caps % FE_CAN_MULTISTREAM) {
            info("MULTISTREAM\n");
-           multistream = true;
+           multistream = true; //
            }
         else {
-           info("MULTISTREAM not supported, disabling NO_STREAM_ID_FILTER.\n");
+           info("MULTISTREAM not supported, disabling PLP ID selection.\n");
            multistream = false;
         }
         if (fe_info.frequency_min == 0 || fe_info.frequency_max == 0) {
