@@ -103,7 +103,7 @@ void xine_dump_service_parameter_set (FILE * f,
                                 struct transponder * t,
                                 struct t2scan_flags * flags)
 {
-        if (s->video_pid || s->audio_pid[0]) {
+        if (s->video_pid || s->audio_pid[0] || s->ac3_pid[0]) {
                 if (s->provider_name)
                         fprintf (f, "%s(%s):", s->service_name, s->provider_name);
                 else
