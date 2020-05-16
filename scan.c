@@ -2858,7 +2858,7 @@ int main(int argc, char ** argv) {
      }
   else {
      flags.codepage = get_user_codepage();
-     info("output charset '%s', use -C <charset> to override\n", iconv_codes[flags.codepage]);
+     info("output charset '%s', use -I <charset> to override\n", iconv_codes[flags.codepage]);
      }        
   if ( adapter == DVB_ADAPTER_AUTO ) {
      info("Info: using DVB adapter auto detection.\n");
