@@ -68,6 +68,7 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
      }
 
   first_byte_value = **inbuf; 
+  debug("\t\tfirst_byte_value=0x%x\n",first_byte_value);
   
   if (IsCharacterCodingCode(first_byte_value)) {
      // ISO/EN 300 468 v011101p, Annex A.2 Selection of character table
@@ -97,6 +98,8 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
                         // using the character code table specified in table A.4.
                         second_byte_value = **inbuf; *inbuf += 1; *inbytesleft -= 1;
                         third_byte_value  = **inbuf; *inbuf += 1; *inbytesleft -= 1;
+                        debug("\t\tsecond_byte_value=0x%x\n",second_byte_value);
+                        debug("\t\tthird_byte_value=0x%x\n",third_byte_value);
 
                         switch(second_byte_value) {
                               case 0x0:
