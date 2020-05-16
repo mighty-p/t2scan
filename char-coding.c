@@ -152,6 +152,7 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
                                    __FUNCTION__, __LINE__, first_byte_value);
             }
      }
+  debug("\t\tDVBCHARSET=%d\n",dvb_charset_id);
   if (dvb_charset_id > iconv_codes_count()) {
      // no special character coding applied: use iso6937-2 w. euro add-on
      char * pEuro;
@@ -200,7 +201,7 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
      strcpy(usr, iconv_codes[user_charset_id]);
      strcpy(&usr[strlen(iconv_codes[user_charset_id])], "//IGNORE");
 
-   //debug("\t\t%s: converting '%s' from '%s' to '%s'\n", __FUNCTION__, *inbuf, iconv_codes[dvb_charset_id], usr);
+     debug("\t\t%s: converting '%s' from '%s' to '%s'\n", __FUNCTION__, *inbuf, iconv_codes[dvb_charset_id], usr);
      conversion_descriptor = iconv_open((const char *) usr, iconv_codes[dvb_charset_id]);
      free(usr);
 
