@@ -2,7 +2,7 @@
  * Simple MPEG/DVB parser to achieve network/service information without initial tuning data
  *
  * Copyright (C) 2006 - 2014 Winfried Koehler
- * Copyright (C) 2017 - 2019 mighty-p 
+ * Copyright (C) 2017 - 2020 mighty-p 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
