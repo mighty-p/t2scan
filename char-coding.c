@@ -68,7 +68,6 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
      }
 
   first_byte_value = **inbuf; 
-  debug("\t\tfirst_byte_value=0x%x\n",first_byte_value);
   
   if (IsCharacterCodingCode(first_byte_value)) {
      // ISO/EN 300 468 v011101p, Annex A.2 Selection of character table
@@ -155,11 +154,10 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
                                    __FUNCTION__, __LINE__, first_byte_value);
             }
      }
-  debug("\t\tDVBCHARSET=%d\n",dvb_charset_id);
   if (dvb_charset_id > iconv_codes_count()) {
      // no special character coding applied: use iso6937-2 w. euro add-on
      char * pEuro;
-     DVBCHARSET("ISO69372");
+     DVBCHARSET("ISO6937"); // 20200517: changed from ISO69372 into ISO6937
 
      while (**inbuf && (pEuro = strchr(*inbuf, 0xA4))) {
            // handle the euro add-on
@@ -171,7 +169,7 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
            *(pi++) = 0x0B;
            *(pi++) = 0xA4;
 
-           verbose("\t\t%s: euro char in iso-6937-2\n", __FUNCTION__);
+           verbose("\t\t%s: euro char in iso-6937\n", __FUNCTION__);
            if (inbytes) {
               char * ibuf = calloc(inbytes + 1, 1);
               strncpy(ibuf, *inbuf, inbytes);
@@ -204,7 +202,7 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
      strcpy(usr, iconv_codes[user_charset_id]);
      strcpy(&usr[strlen(iconv_codes[user_charset_id])], "//IGNORE");
 
-     debug("\t\t%s: converting '%s' from '%s' to '%s'\n", __FUNCTION__, *inbuf, iconv_codes[dvb_charset_id], usr);
+     moreverbose("\t\tconverting from '%s' to '%s'\n", iconv_codes[dvb_charset_id], usr);
      conversion_descriptor = iconv_open((const char *) usr, iconv_codes[dvb_charset_id]);
      free(usr);
 
