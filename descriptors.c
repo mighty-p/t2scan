@@ -150,6 +150,7 @@ void parse_service_descriptor (const unsigned char *buf, struct service *s, unsi
   size_t inbytesleft, outbytesleft;
   char * inbuf = NULL;
   char * outbuf = NULL;
+  int default_charset_reset = 0;
 
   hd(buf);
   s->type = buf[2];
@@ -261,6 +262,7 @@ void parse_service_descriptor (const unsigned char *buf, struct service *s, unsi
      inbuf = provider_name;
      outbuf = s->provider_name;
      char_coding(&inbuf, &inbytesleft, &outbuf, &outbytesleft, user_charset_id);
+     if(strcmp(s->provider_name,"ORF")==0) { default_charset_reset++; set_char_coding_default_charset("ISO885915"); } // special handling for ORF 20200517
      }
 
   free(provider_name);
@@ -272,6 +274,7 @@ void parse_service_descriptor (const unsigned char *buf, struct service *s, unsi
      inbuf = provider_short_name;
      outbuf = s->provider_short_name;
      char_coding(&inbuf, &inbytesleft, &outbuf, &outbytesleft, user_charset_id);
+     if(strcmp(s->provider_short_name,"ORF")==0) { default_charset_reset++; set_char_coding_default_charset("ISO885915"); } // special handling for ORF 20200517
      }
 
   free(provider_short_name);
@@ -394,6 +397,7 @@ void parse_service_descriptor (const unsigned char *buf, struct service *s, unsi
   free(service_short_name);
 
   info("\tservice = %s (%s)\n", s->service_name, s->provider_name);
+  if (default_charset_reset) reset_char_coding_default_charset();
 }
 
 void parse_ca_identifier_descriptor (const unsigned char *buf, struct service *s) {

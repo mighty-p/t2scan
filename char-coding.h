@@ -29,6 +29,21 @@ int get_user_codepage(void);
 int get_codepage_index(const char * codepage);
 
 /*
+ * set the default charset that is used if a string does not include a charset definition in the first byte
+ */
+void set_char_coding_default_charset();
+
+/*
+ * reset default charset to the reset_to_charset
+ */
+void reset_char_coding_default_charset();
+
+/*
+ * set the charset to which reset_char_coding_default_charset() should set back the default charset
+ */
+void set_reset_to_charset(char* new_charset);
+
+/*
  * handle character set correctly (via libiconv),
  * ISO/EN 300 468 annex A 
  *

@@ -44,6 +44,33 @@
 #define MIN(X,Y) (X < Y ? X : Y)
 #define IsCharacterCodingCode(C) (C < 0x20)
 
+char* reset_to_charset = "ISO6937"; // 20200517: changed from ISO69372 into ISO6937
+char* default_charset = "ISO6937";
+
+/*
+ * set the default charset that is used if a string does not include a charset definition in the first byte
+ */
+void set_char_coding_default_charset(char* new_charset) {
+  default_charset = new_charset;
+  moreverbose("Assuming default charset %s.\n",default_charset);
+}
+
+/*
+ * reset default charset to the reset_to_charset
+ */
+void reset_char_coding_default_charset() {
+  default_charset = reset_to_charset;
+  moreverbose("Resetting default charset to %s.\n",default_charset);
+}
+
+/*
+ * set the charset to which reset_char_coding_default_charset() should set back the default charset
+ */
+void set_reset_to_charset(char* new_charset) {
+  reset_to_charset = new_charset;
+  reset_char_coding_default_charset();
+}
+
 /*
  * handle character set correctly (via glib iconv),
  * ISO/EN 300 468 annex A 
@@ -97,8 +124,6 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
                         // using the character code table specified in table A.4.
                         second_byte_value = **inbuf; *inbuf += 1; *inbytesleft -= 1;
                         third_byte_value  = **inbuf; *inbuf += 1; *inbytesleft -= 1;
-                        debug("\t\tsecond_byte_value=0x%x\n",second_byte_value);
-                        debug("\t\tthird_byte_value=0x%x\n",third_byte_value);
 
                         switch(second_byte_value) {
                               case 0x0:
@@ -155,11 +180,11 @@ void char_coding(char **inbuf, size_t * inbytesleft, char **outbuf, size_t * out
             }
      }
   if (dvb_charset_id > iconv_codes_count()) {
-     // no special character coding applied: use iso6937-2 w. euro add-on
+     // no special character coding applied: use default charset (standard: iso6937 w. euro add-on)
      char * pEuro;
-     DVBCHARSET("ISO6937"); // 20200517: changed from ISO69372 into ISO6937
+     DVBCHARSET(default_charset);
 
-     while (**inbuf && (pEuro = strchr(*inbuf, 0xA4))) {
+     if (strcmp(default_charset,"ISO6937")==0) while (**inbuf && (pEuro = strchr(*inbuf, 0xA4))) {
            // handle the euro add-on
            char * ebuf = calloc(3,1);
            char * pi = ebuf;

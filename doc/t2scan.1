@@ -132,6 +132,13 @@ don't update transponder parameters with the data in the NIT.
 .br
 This means that most tuning parameters will be set to AUTO.
 .TP
+.B \-i CHARSET
+specifies the default charset in which services are stored in the NIT.
+.br
+I.e. 'UTF-8', 'ISO-8859-15'; default: 'ISO6937'
+.br
+use 'iconv --list' to see full list of charsets.
+.TP
 .B \-I CHARSET
 specifies the output charset, i.e. "UTF-8", "ISO-8859-15"
 .br

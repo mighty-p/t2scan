@@ -431,6 +431,10 @@ static const char * ext_opts = "%s expert help\n"
   "       -U\n"
   "               don't update transponder parameters with the data in the NIT.\n"
   "               This means that most tuning parameters will be set to AUTO.\n"
+  "       -i <charset>, --services-charset <charset>\n"
+  "               set the default charset in which services are stored in\n" 
+  "               the NIT, i.e. 'UTF-8', 'ISO-8859-15'; default: 'ISO6937'\n"
+  "               use 'iconv --list' for full list of charsets.\n"
   "       -I <charset>, --charset <charset>\n"
   "               convert to charset, i.e. 'UTF-8', 'ISO-8859-15'\n"
   "               use 'iconv --list' for full list of charsets.\n"
@@ -485,6 +489,7 @@ static struct option long_options[] = {
     {"help"              , no_argument      , NULL, 'h'},
     //---
     {"extended-help"     , no_argument      , NULL, 'H'},
+    {"services-charset"  , required_argument, NULL, 'i'},
     {"charset"           , required_argument, NULL, 'I'},
     {"verbose"           , no_argument      , NULL, 'v'},
     {"debug"             , no_argument      , NULL, '!'},
@@ -2558,7 +2563,7 @@ int main(int argc, char ** argv) {
   
   for (opt=0; opt<argc; opt++) info("%s ", argv[opt]); info("%s", "\n");
 
-  while((opt = getopt_long(argc, argv, "a:c:dhl:m:o:p:q:rs:t:vA:C:DEFGHI:L:MP:S:UVY:Z", long_options, NULL)) != -1) {
+  while((opt = getopt_long(argc, argv, "a:c:dhi:l:m:o:p:q:rs:t:vA:C:DEFGHI:L:MP:S:UVY:Z", long_options, NULL)) != -1) {
      switch(opt) {
      case 'a': //adapter
              if (strstr(optarg, "/dev/dvb")) {
@@ -2614,6 +2619,9 @@ int main(int argc, char ** argv) {
              ext_help();
              cleanup();
              return 0;
+             break;
+     case 'i': // default charset to be used for data in descriptors
+             set_reset_to_charset(strdup(optarg));
              break;
      case 'I': // iconv to charset (-C in w_scan)
              codepage = strdup(optarg);
