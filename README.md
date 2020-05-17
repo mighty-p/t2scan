@@ -139,7 +139,7 @@ on the Github project page: https://github.com/mighty-p/t2scan
 - Arturo Martinez <martinez at the server embl dot de> for a huge bunch of tests on DVB-S/DVB-S2
 - Rolf Ahrenberg for doing DVB-T/T2 tests and suggestions to improve w_scan
 - "GTC" for providing a patch to fix the tuning timeouts code
-- Andreas Mikula for finding out that Austria uses PLP ID 1
+- Andreas Mikula for reporting that Austria uses PLP ID 1 and for help with debugging
 - "HelmutB" for informing me about Austria using PLP ID 1, for testing and advice about PLP IDs.
 - "clausmuus" for helping me test why scanning on some devices has not worked reliably
 - "highrgb" for testing
