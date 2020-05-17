@@ -1,5 +1,11 @@
 ChangeLog:
 ----------
+2020-05-17:
+  - Bump version to 20200517
+  - Added parameter -i to override the default charset for strings in SDT
+  - Created a special handling for string encoding for ORF (fix Issue #8 on Github project page)
+  - Fixed missing ac3 radio channels in Xine output (Issue #10 on Github project page)
+  - Fixed wrong parameter hint in output (Issue #9 on Github project page) 
 2020-05-02:
   - Manual reset of fe_status (thanks to HelmutB for reporting)
   - Ignore descriptors in NIT that do not fit the delivery system (thanks to HelmutB for reporting)
