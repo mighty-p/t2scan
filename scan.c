@@ -2845,16 +2845,13 @@ int main(int argc, char ** argv) {
         break;
      case OUTPUT_VLC_M3U:
         info("output format vlc xspf playlist\n");
-        // vlc format will be output always as utf-8.
-        if (codepage)
-           free(codepage);
-        codepage = strdup("ISO-8859-1");
         break;
      case OUTPUT_XML:
         info("output format w_scan XML tuning data\n");
-        if (codepage)
-           free(codepage);
-        codepage = strdup("ISO-8859-1");
+        // 20200518 following lines uncommented since services are currently not printed in xml anyways 
+        //if (codepage)
+        //   free(codepage);
+        //codepage = strdup("ISO-8859-1");
         break;
      default:
         cleanup();

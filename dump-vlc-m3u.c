@@ -30,6 +30,8 @@
 #include "extended_frontend.h"
 #include "scan.h"
 #include "dump-vlc-m3u.h"
+#include <iconv.h>
+#include "iconv_codes.h"
 
 /******************************************************************************
  * NOTE: VLC-2.x.x seems to support DVB-S2 now, whereas VLC-1.x missed DVB-S2
@@ -299,7 +301,7 @@ void vlc_dump_dvb_parameters_as_xspf (FILE * f, struct transponder * t, struct t
  *
  *       - REWORK LOGIC BEHIND SERVICE NAME;
  *       - MOVE TO GENERAL XML FUNC IN CHAR_CODING.C/.H && DEFINE ENTITIES;
- *       - ADD CONVERSION TO 8859-1.
+ *       - ADD CONVERSION TO 8859-1. --- DONE 20200518
  *       IN GENERAL, THERE WILL BE NEVER A COMPLETE SOLUTION POSSIBLE,
  *       SINCE INPUT CHAR CODING IS VERY OFTEN WRONG CODED BY SERVICE
  *       PROVIDERS. :(
@@ -308,73 +310,89 @@ void vlc_dump_service_parameter_set_as_xspf (FILE * f, struct service * s,
                                 struct transponder * t, struct t2scan_flags * flags) {
   char buf[256];
   int i,j,len = s->service_name? strlen(s->service_name):0;
-  for(i=0,j=0; i<len; i++) {
-     uint8_t u = (unsigned) s->service_name[i];
-     if (u < 0x7F) {
-        if (range(u,0x09,0x09)) {
-           buf[j++]=' ';
-           }
-        else if (range(u,0x20,0x21) ||
-                 range(u,0x23,0x25) ||
-                 range(u,0x28,0x3B) ||
-                 range(u,0x3D,0x3D) ||
-                 range(u,0x3F,0x7E)) {
-           buf[j++] = (char) u;
-           }
-        else if (range(u,0x22,0x22)) { // double quotation mark
-           buf[j++]='&';
-           buf[j++]='q';
-           buf[j++]='u';
-           buf[j++]='o';
-           buf[j++]='t';
-           buf[j++]=';';
-           }
-        else if (range(u,0x26,0x26)) { // double quotation mark
-           buf[j++]='&';
-           buf[j++]='a';
-           buf[j++]='m';
-           buf[j++]='p';
-           buf[j++]=';';
-           }
-        else if (range(u,0x27,0x27)) { // apostrophe
-           buf[j++]='&';
-           buf[j++]='a';
-           buf[j++]='p';
-           buf[j++]='o';
-           buf[j++]='s';
-           buf[j++]=';';
-           }
-        else if (range(u,0x3C,0x3C)) { // less-than sign 
-           buf[j++]='&';
-           buf[j++]='l';
-           buf[j++]='t';
-           buf[j++]=';';
-           }
-        else if (range(u,0x3E,0x3E)) { // greater-than sign
-           buf[j++]='&';
-           buf[j++]='g';
-           buf[j++]='t';
-           buf[j++]=';';
-           }
-        }
-     else {
-        // threat them as ISO8859-1: SOME HACK ANYWAY AS INPUT CHAR SET MAY BE WRONG.
-        if (u >= 0xA1) { // skip unused and NBSP: 0x7F .. 0xA0
-           // numeric character reference "&#xhhhh;"
-           uint8_t ca = u >> 4;  // A .. F
-           uint8_t cb = u & 0xF; // 1 .. F
-           buf[j++]='&';
-           buf[j++]='#';
-           buf[j++]='x';
-           buf[j++]='0';
-           buf[j++]='0';
-           buf[j++]= ca < 10 ? '0' + ca : 'A' + (ca - 10);
-           buf[j++]= cb < 10 ? '0' + cb : 'A' + (cb - 10);
-           buf[j++]=';';
-           }              
-        }
-     }
-  buf[j++]=0;
+  if (len>0) {
+    char* service_name_codepage = strdup(s->service_name);
+    size_t service_name_outbuf_len = 3*len;
+    char* service_name_outbuf = malloc(service_name_outbuf_len*sizeof(char));
+    char* p1 = service_name_outbuf;
+    char * usr = calloc(strlen(iconv_codes[flags->codepage])+ 1, 1);
+    strcpy(usr, iconv_codes[flags->codepage]);
+    iconv_t conversion_descriptor = iconv_open("ISO-8859-1", usr);
+    free(usr);
+    if (!iconv(conversion_descriptor, &service_name_codepage, (size_t*)&len, &service_name_outbuf, &service_name_outbuf_len)) {
+      warning("iconv to ISO-8859-1 failed.");
+      p1 = s->service_name;
+    }
+    len=strlen(p1);
+ 
+    for(i=0,j=0; i<len; i++) {
+       uint8_t u = (unsigned) p1[i];
+       if (u < 0x7F) {
+          if (range(u,0x09,0x09)) {
+             buf[j++]=' ';
+             }
+          else if (range(u,0x20,0x21) ||
+                   range(u,0x23,0x25) ||
+                   range(u,0x28,0x3B) ||
+                   range(u,0x3D,0x3D) ||
+                   range(u,0x3F,0x7E)) {
+             buf[j++] = (char) u;
+             }
+          else if (range(u,0x22,0x22)) { // double quotation mark
+             buf[j++]='&';
+             buf[j++]='q';
+             buf[j++]='u';
+             buf[j++]='o';
+             buf[j++]='t';
+             buf[j++]=';';
+             }
+          else if (range(u,0x26,0x26)) { // double quotation mark
+             buf[j++]='&';
+             buf[j++]='a';
+             buf[j++]='m';
+             buf[j++]='p';
+             buf[j++]=';';
+             }
+          else if (range(u,0x27,0x27)) { // apostrophe
+             buf[j++]='&';
+             buf[j++]='a';
+             buf[j++]='p';
+             buf[j++]='o';
+             buf[j++]='s';
+             buf[j++]=';';
+             }
+          else if (range(u,0x3C,0x3C)) { // less-than sign 
+             buf[j++]='&';
+             buf[j++]='l';
+             buf[j++]='t';
+             buf[j++]=';';
+             }
+          else if (range(u,0x3E,0x3E)) { // greater-than sign
+             buf[j++]='&';
+             buf[j++]='g';
+             buf[j++]='t';
+             buf[j++]=';';
+             }
+          }
+       else {
+          // threat them as ISO8859-1: SOME HACK ANYWAY AS INPUT CHAR SET MAY BE WRONG.
+          if (u >= 0xA1) { // skip unused and NBSP: 0x7F .. 0xA0
+             // numeric character reference "&#xhhhh;"
+             uint8_t ca = u >> 4;  // A .. F
+             uint8_t cb = u & 0xF; // 1 .. F
+             buf[j++]='&';
+             buf[j++]='#';
+             buf[j++]='x';
+             buf[j++]='0';
+             buf[j++]='0';
+             buf[j++]= ca < 10 ? '0' + ca : 'A' + (ca - 10);
+             buf[j++]= cb < 10 ? '0' + cb : 'A' + (cb - 10);
+             buf[j++]=';';
+             }              
+          }
+       }
+    buf[j++]=0;
+    }
 
   fprintf_tab2("<track>\n");
   fprintf (f, "%s%s%.4d. %s%s\n", T3, "<title>", idx++, buf, "</title>");
