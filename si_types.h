@@ -113,7 +113,7 @@ struct service {
   uint32_t logical_channel_number;
   uint8_t  running;
   void   * priv;
-} service_t, * p_service_t;
+};
 
 /*******************************************************************************
 /* transponder type.
@@ -204,7 +204,7 @@ struct transponder {
   char * signal_strength_unit;
   double signal_quality;
   char * signal_quality_unit;
-} __attribute__((packed))  transponder_t, * p_transponder_t;
+} __attribute__((packed));
 
 /*******************************************************************************
 /* satellite channel routing type.
