@@ -144,3 +144,5 @@ on the Github project page: https://github.com/mighty-p/t2scan
 - "clausmuus" for helping me test why scanning on some devices has not worked reliably
 - "highrgb" for testing
 - "motze" for testing and for finding out that Italy uses PLP ID 1 for their DVB-T2 test multiplex
+- Jernej Škrabec (github user "jernejsk") for fixing the building with gcc10
+
