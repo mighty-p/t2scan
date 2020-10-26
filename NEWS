@@ -2,6 +2,7 @@ ChangeLog:
 ----------
 2020-10-26:
   - Bump version string to 20200628 for 0.7 release
+  - Bump version string to 20201027 for post-0.7 development (NOTE: currently no further development planned from my side)
 2020-06-28:
   - Fix building with gcc10 (thanks to mergin in a patch from Jernej Škrabec)
 2020-05-17:
