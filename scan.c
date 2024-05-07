@@ -2410,14 +2410,14 @@ static void network_scan(int frontend_fd, int tuning_data) {
               // plp loop
               if (delsys == SYS_DVBT2 && (!multistream)) {
                  // multistream is not supported, so use plp id -1 ("autodetection") as only value to scan
-                 my_plplist = &plplist;
+                 my_plplist = plplist;
                  my_plplist[0] = -1;
                  my_plplist_length = 1;
               } else if (delsys == SYS_DVBT2 && use_user_plplist) {
-                 my_plplist = &user_plplist;
+                 my_plplist = user_plplist;
                  my_plplist_length = user_plplist_length;
               } else if (delsys == SYS_DVBT2) {
-                 my_plplist = &plplist;
+                 my_plplist = plplist;
                  my_plplist_length = plplist_length;
               } else {
                  // for legacy DVB-T (or ATSC) there is nothing such as PLPs
