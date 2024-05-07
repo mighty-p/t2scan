@@ -128,7 +128,7 @@ void parse_t2scan_flags(const char * input_buffer, struct t2scan_flags * flags) 
 
 int dvbscan_parse_tuningdata(const char * tuningdata, struct t2scan_flags * flags) {
         FILE * initdata = NULL;
-        char * buf = (char *) calloc(sizeof(char), MAX_LINE_LENGTH);
+        char * buf = (char *) calloc(MAX_LINE_LENGTH, sizeof(char));
         enum __dvbscan_args arg;
         struct transponder * tn;
         int count = 0;
@@ -147,7 +147,7 @@ int dvbscan_parse_tuningdata(const char * tuningdata, struct t2scan_flags * flag
                 }
 
         while (fgets(buf, MAX_LINE_LENGTH, initdata) != NULL) {
-                char * copy = (char *) calloc(sizeof(char), strlen(buf) + 1);
+                char * copy = (char *) calloc(strlen(buf) + 1, sizeof(char));
                 char * token;
 
                 if (copy == NULL) {
