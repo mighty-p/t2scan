@@ -118,7 +118,8 @@ int choose_country (const char * country,
 
                 case    AT:     //      AUSTRIA
                 case    IT:     //      ITALY
-                   plplist[0] = -1; plplist[1] = 1; plplist[2] = 0; plplist_length = 3;
+                   plplist[0] = -1; plplist[1] = 1; plplist[2] = 0;
+                   *plplist_length = 3;
                 case    BE:     //      BELGIUM
                 case    CH:     //      SWITZERLAND
                 case    CO:     //      COLOMBIA, DVB-C + DVB-T2
