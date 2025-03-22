@@ -31,7 +31,7 @@ int get_codepage_index(const char * codepage);
 /*
  * set the default charset that is used if a string does not include a charset definition in the first byte
  */
-void set_char_coding_default_charset();
+void set_char_coding_default_charset(char *);
 
 /*
  * reset default charset to the reset_to_charset

@@ -17,7 +17,7 @@ void em_dvbapi(uint16_t * flags);
 int  em_setproperty(struct dtv_properties * cmdseq);
 int  em_getproperty(struct dtv_properties * cmdseq);
 int  em_status(fe_status_t * status);
-void em_lnb(bool high_band, uint32_t high_val, uint32_t low_val);
+void em_lnb(_Bool high_band, uint32_t high_val, uint32_t low_val);
 void em_polarization(uint8_t p);
 
 //--------------------------------------------------

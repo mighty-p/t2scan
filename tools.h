@@ -31,10 +31,12 @@
 /*******************************************************************************
 /* common typedefs && logging.
  ******************************************************************************/
-#ifndef bool
-  typedef int bool;
-  #define false 0
-  #define true  !(false)
+#if defined __STDC__ && defined __STDC_VERSION__ && __STDC_VERSION__ <= 201710L
+  #ifndef bool
+    typedef int bool;
+    #define false 0
+    #define true  !(false)
+  #endif
 #endif
 
 #define min(a,b)  (b<a?b:a)
